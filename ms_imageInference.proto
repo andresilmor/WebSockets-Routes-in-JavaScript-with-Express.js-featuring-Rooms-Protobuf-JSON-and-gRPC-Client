@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+//This tells gRPC we have an InferenceServer service with an inference function, notice that we need to specify the type of the messages: InferenceRequest and InferenceReply
+
+// "repeated" means list of
+
+//Request message containing image
+message InferenceRequest {
+    string image = 1;
+
+}
+
+//Response Message 
+message MixedRealityStreamInferenceReply {
+    uint32 pred = 1;
+
+}
+
+service ImageInferenceService {
+    rpc inference (InferenceRequest) returns (MixedRealityStreamInferenceReply) { }
+}
+
