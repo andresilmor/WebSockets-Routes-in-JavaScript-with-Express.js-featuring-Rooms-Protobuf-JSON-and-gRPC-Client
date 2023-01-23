@@ -1,21 +1,49 @@
 const express = require('express')
 const app = express()
-
 const server = require('http').createServer(app)
 
 const WebSocket = require('ws')
-
 const wss = new WebSocket.Server( { server: server } )
 
-wss.on('connection', function connection(ws) {
+const parseArgs = require('minimist');
+const grpc = require('@grpc/grpc-js');
+const grpcClient = require('./grpc_client')
+
+var protobuf = require("protobufjs");
+
+
+wss.on('connection', (ws) => {
     console.log("A new client connected")
-    ws.send("Yo")
-
+    
     ws.on('message', function incoming(message) {
-        console.log("Receved: %s", message)
+        
+        ws.binaryType = 'arraybuffer'
+        
+        //console.log("Receved: %s", message)
+        console.log("Message received")
 
-        ws.send("Yo again")
+        console.log(message.byteLength)
 
+        const client = new grpcClient.imageInference.ImageInferenceService(
+            '5.tcp.eu.ngrok.io:17400',
+        
+            grpc.credentials.createInsecure()
+        );
+        
+        protobuf.load("protobufs/messages/ImageInferenceRequest.proto", function(err, root) {
+            var request = root.lookupType("imageInferenceRequest.ImageInferenceRequest");
+
+            var decoded = request.decode(message);
+
+            client.Inference({ image: decoded['Test'] }, function (err, response) {
+                console.log('Message:', response.pred);
+                ws.send(response.pred)
+            });
+            
+        })
+        
+        
+        ws.send(message.buffer)
     })
 
 })

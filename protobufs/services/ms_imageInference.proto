@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package imageInference;
+
+service ImageInferenceService {
+    rpc Inference (InferenceRequest) returns (MixedRealityStreamInferenceReply) { }
+}
+
+message InferenceRequest {
+    string image = 1;
+
+}
+
+message MixedRealityStreamInferenceReply {
+    uint32 pred = 1;
+
+}
+

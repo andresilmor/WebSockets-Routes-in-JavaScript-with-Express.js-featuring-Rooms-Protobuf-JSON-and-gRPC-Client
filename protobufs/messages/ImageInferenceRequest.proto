@@ -1,0 +1,6 @@
+package imageInferenceRequest;
+syntax = "proto3";
+
+message ImageInferenceRequest {
+    string Test = 1; // becomes awesomeField
+}
