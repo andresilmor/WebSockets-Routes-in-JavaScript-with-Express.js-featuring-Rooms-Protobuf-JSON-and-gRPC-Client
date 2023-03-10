@@ -1,18 +1,9 @@
+package pacientsAndEmotionsInferenceReply;
 syntax = "proto3";
-
-package imageInference;
-
-service ImageInferenceService {
-    rpc PacientsAndEmotionsInference (InferenceRequest) returns (PacientsAndEmotionsInferenceReply) { }
-}
-
-message InferenceRequest {
-    bytes image = 1;
-
-}
 
 message PacientsAndEmotionsInferenceReply {
     repeated PacientAndEmotionsDetected detections = 1;
+  
 
 }
 

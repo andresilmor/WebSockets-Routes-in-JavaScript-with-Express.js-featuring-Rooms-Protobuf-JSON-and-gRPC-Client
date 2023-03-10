@@ -1,0 +1,9 @@
+package testing;
+syntax = "proto3";
+
+message Testing {
+    repeated string nome = 1;
+
+}
+
+
