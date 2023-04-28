@@ -19,7 +19,7 @@ wss.on('connection', (ws) => {
         
         //ws.binaryType = 'arraybuffer'
         
-        console.log("Receved: %s", message)
+        //console.log("Receved: %s", message)
         //console.log("Message received")
 
         //console.log(message.byteLength)
@@ -60,7 +60,7 @@ wss.on('connection', (ws) => {
         
 
         const client = new grpcClient.imageInference.ImageInferenceService(
-            '7.tcp.eu.ngrok.io:12401',
+            '2.tcp.eu.ngrok.io:15904',
         
             grpc.credentials.createInsecure()
         );
@@ -70,20 +70,20 @@ wss.on('connection', (ws) => {
         protobuf.load("protobufs/messages/ImageInferenceRequest.proto", function(err, root) {
             request = root.lookupType("imageInferenceRequest.ImageInferenceRequest");
             
-            console.log("So it begins...")
+            //console.log("So it begins...")
 
             var decoded = request.decode(new Uint8Array(message));
 
             client.PacientsAndEmotionsInference({ image: decoded['image'] }, function (err, response) {
-                console.log('0 Message:', response.detections);
-                console.log('R Message:', response);
-                console.log('Response in JSON:', JSON.stringify(response))
+                //console.log('0 Message:', response.detections);
+                //console.log('R Message:', response);
+                //console.log('Response in JSON:', JSON.stringify(response))
                 inferenceResult = response.detections
-                console.log("----")
-                console.log(response.detections.length)
-                if(response.detections.length > 0) {
-                    console.log(response.detections[0]['emotionsDetected']['continuous'])
-                    console.log(response.detections[0]['emotionsDetected']['categorical'])
+                //console.log("----")
+                //console.log(response.detections.length)
+             
+                    //console.log(response.detections[0]['emotionsDetected']['continuous'])
+                    //console.log(response.detections[0]['emotionsDetected']['categorical'])
 
                     /*
                     protobuf.load("protobufs/messages/PacientsAndEmotionsInferenceReply.proto", function(err, root) {
@@ -116,7 +116,7 @@ wss.on('connection', (ws) => {
                         console.log("And now it ends")
                         console.log("----")
                     })*/
-
+                    /*
                     protobuf.load("protobufs/messages/PacientsAndEmotionsInferenceReply.proto", function(err, root) {
                         var reply = root.lookupType("pacientsAndEmotionsInferenceReply.PacientsAndEmotionsInferenceReply");
                         console.log('1 Message:', inferenceResult);
@@ -143,13 +143,16 @@ wss.on('connection', (ws) => {
                         console.log('Test 0:', decoded.detections[0])
                         console.log(JSON.stringify(decoded))
                         console.log("----")
+                        */
+                        //console.log(JSON.stringify(response))
                         ws.send(JSON.stringify(response))
-                        console.log("----")
-                        console.log("And now it ends")
-                        console.log("----")
-                    })
+                        //console.log("----")
+                        //console.log("And now it ends")
+                        //console.log("----")
+                        //console.log("----")
+                    
 
-                }
+          
                 
             });
             
