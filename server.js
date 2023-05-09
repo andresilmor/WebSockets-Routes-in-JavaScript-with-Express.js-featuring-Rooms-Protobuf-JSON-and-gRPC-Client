@@ -56,6 +56,8 @@ wss.on('connection', (ws) => {
         */
         //ws.binaryType = 'arraybuffer'
         
+        console.log(message)
+        return
         
         
 
