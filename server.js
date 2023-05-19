@@ -1,21 +1,32 @@
 const express = require('express')
-const app = express()
-const server = require('http').createServer(app)
-
-const WebSocket = require('ws')
-const wss = new WebSocket.Server( { server: server } )
 
 const parseArgs = require('minimist');
 const grpc = require('@grpc/grpc-js');
-const grpcClient = require('./grpc_client')
-
 var protobuf = require("protobufjs");
+const WebSocket = require('ws')
+const grpcClient = require('./grpc_client')
+const { v4: uuid } = require('uuid');
 
-wss.on('connection', (ws) => {
-    console.log("A new client connected")
 
-    
-    ws.on('message', function incoming(message) {
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+//                                                     Machine Learning (Frame Inference)
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+const ml_imgInference_clients = {};
+
+const ml_imgInference_app = express()
+const ml_imgInference_server = require('http').createServer(ml_imgInference_app)
+
+const ml_imgInference_wss = new WebSocket.Server( { server: ml_imgInference_server } )
+
+ml_imgInference_wss.on('connection', (connection) => {
+    console.log("A new client connected on Machine Learning (Image inference) on port 9000 ")
+
+    const userId = uuid();
+    ml_imgInference_clients[userId] = connection;
+
+    connection.on('message', function incoming(data) {
         
         //ws.binaryType = 'arraybuffer'
         
@@ -55,12 +66,10 @@ wss.on('connection', (ws) => {
 
         */
         //ws.binaryType = 'arraybuffer'
-        
-        console.log(message)
-        return
-        
-        
 
+        console.log(data)
+        return
+     
         const client = new grpcClient.imageInference.ImageInferenceService(
             '2.tcp.eu.ngrok.io:15904',
         
@@ -74,7 +83,7 @@ wss.on('connection', (ws) => {
             
             //console.log("So it begins...")
 
-            var decoded = request.decode(new Uint8Array(message));
+            var decoded = request.decode(new Uint8Array(data));
 
             client.PacientsAndEmotionsInference({ image: decoded['image'] }, function (err, response) {
                 //console.log('0 Message:', response.detections);
@@ -147,7 +156,7 @@ wss.on('connection', (ws) => {
                         console.log("----")
                         */
                         //console.log(JSON.stringify(response))
-                        ws.send(JSON.stringify(response))
+                        connection.send(JSON.stringify(response))
                         //console.log("----")
                         //console.log("And now it ends")
                         //console.log("----")
@@ -167,7 +176,127 @@ wss.on('connection', (ws) => {
 
 })
 
-app.get('/', (req, res) => res.send('Hello World'))
+ml_imgInference_server.listen(9000, () => console.log("Machine Learning (Image inference) on port 9000"))
 
-server.listen(8000, () => console.log("Listening on port 8000"))
 
+// ---------------------------------------------------------------------------------------------------------------------------------------
+//                                                     QRCode Authentication
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+
+const qrCodeAuth_clients = {};
+
+const qrCodeAuth_app = express()
+const qrCodeAuth_server = require('http').createServer(qrCodeAuth_app)
+
+const qrCodeAuth_wss = new WebSocket.Server( { server: qrCodeAuth_server } )
+
+qrCodeAuth_wss.on('connection', (connection) => {
+    console.log("A new client connected on QRCode Authentication on port 9010")
+
+    const userId = uuid();
+    qrCodeAuth_clients[userId] = connection;
+    console.log(userId)
+    let channel;
+
+    connection.on('message', function incoming(data, isBinary) {
+        const message = isBinary ? data : data.toString();
+        const jsonMessage = JSON.parse(message)
+        
+        if (jsonMessage["channel"] != null) {
+             console.log(jsonMessage["channel"])
+ 
+             channel = jsonMessage["channel"]
+ 
+             if (qrCodeAuth_clients[channel] == null) {
+                 qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "provider" : connection } 
+ 
+             } else {
+                if (qrCodeAuth_clients[channel]["requester"] == undefined || qrCodeAuth_clients[channel]["requester"] == null) {
+                    qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "requester" : connection } 
+
+                    if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == false) {
+                        qrCodeAuth_clients[channel]["provider"].send(
+                            JSON.stringify({
+                                confirmation: false,
+                            })
+                        );
+                    }
+
+                } else {
+                    if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == false) {
+                        console.log("DENIED")
+                        qrCodeAuth_clients[channel]["requester"].send(
+                            JSON.stringify({
+                                confirmation : false
+                            })
+                        )
+                        connection.close()
+
+                    } else if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == true) {
+                        console.log("APPROVED")
+                        qrCodeAuth_clients[channel]["requester"].send(
+                            JSON.stringify({
+                                confirmation : true,
+                                authToken: jsonMessage["uuid"]
+                            })
+                        )
+                        connection.close()
+
+                    }
+
+                }
+    
+             }
+ 
+        } 
+    
+    })
+
+    connection.on('close', () => {
+        if (qrCodeAuth_clients[channel] != undefined) {
+            if (qrCodeAuth_clients[channel]["provider"] != null) qrCodeAuth_clients[channel]["provider"].close()
+            if (qrCodeAuth_clients[channel]["requester"] != null) qrCodeAuth_clients[channel]["requester"].close()
+
+        }
+
+        delete qrCodeAuth_clients[channel]
+        
+    })
+
+})
+
+qrCodeAuth_server.listen(9010, () => console.log("QRCode Authentication on port 9010"))
+
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+//                                                     QRCode Decode
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+const qrCodeDecode_clients = {};
+
+const qrCodeDecode_app = express()
+const qrCodeDecode_server = require('http').createServer(qrCodeDecode_app)
+
+const qrCodeDecode_wss = new WebSocket.Server( { server: qrCodeDecode_server } )
+
+qrCodeDecode_wss.on('connection', (connection) => {
+    console.log("A new client connected on QRCode Decode on port 9020")
+
+    const userId = uuid();
+    qrCodeAuth_clients[userId] = connection;
+    console.log(userId)
+
+    connection.on('message', function incoming(data, isBinary) {
+   
+    
+    })
+
+    connection.on('close', () => {
+   
+        
+    })
+
+})
+
+qrCodeDecode_server.listen(9020, () => console.log("QRCode Decode on port 9020"))
