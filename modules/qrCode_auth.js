@@ -22,56 +22,61 @@ qrCodeAuth_wss.on('connection', (connection) => {
     let channel;
 
     connection.on('message', function incoming(data, isBinary) {
-        const message = isBinary ? data : data.toString();
-        const jsonMessage = JSON.parse(message)
-        
-        if (jsonMessage["channel"] != null) {
-             console.log(jsonMessage["channel"])
- 
-             channel = jsonMessage["channel"]
- 
-             if (qrCodeAuth_clients[channel] == null) {
-                 qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "provider" : connection } 
- 
-             } else {
-                if (qrCodeAuth_clients[channel]["requester"] == undefined || qrCodeAuth_clients[channel]["requester"] == null) {
-                    qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "requester" : connection } 
-
-                    if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == false) {
-                        qrCodeAuth_clients[channel]["provider"].send(
-                            JSON.stringify({
-                                confirmation: false,
-                            })
-                        );
-                    }
-
+        try {
+            const message = isBinary ? data : data.toString();
+            const jsonMessage = JSON.parse(message)
+            
+            if (jsonMessage["channel"] != null) {
+                console.log(jsonMessage["channel"])
+    
+                channel = jsonMessage["channel"]
+    
+                if (qrCodeAuth_clients[channel] == null) {
+                    qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "provider" : connection } 
+    
                 } else {
-                    if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == false) {
-                        console.log("DENIED")
-                        qrCodeAuth_clients[channel]["requester"].send(
-                            JSON.stringify({
-                                confirmation : false
-                            })
-                        )
-                        connection.close()
+                    if (qrCodeAuth_clients[channel]["requester"] == undefined || qrCodeAuth_clients[channel]["requester"] == null) {
+                        qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "requester" : connection } 
 
-                    } else if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == true) {
-                        console.log("APPROVED")
-                        qrCodeAuth_clients[channel]["requester"].send(
-                            JSON.stringify({
-                                confirmation : true,
-                                authToken: jsonMessage["uuid"]
-                            })
-                        )
-                        connection.close()
+                        if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == false) {
+                            qrCodeAuth_clients[channel]["provider"].send(
+                                JSON.stringify({
+                                    confirmation: false,
+                                })
+                            );
+                        }
+
+                    } else {
+                        if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == false) {
+                            console.log("DENIED")
+                            qrCodeAuth_clients[channel]["requester"].send(
+                                JSON.stringify({
+                                    confirmation : false
+                                })
+                            )
+                            connection.close()
+
+                        } else if (jsonMessage["confirmation"] != null && jsonMessage["confirmation"] == true) {
+                            console.log("APPROVED")
+                            qrCodeAuth_clients[channel]["requester"].send(
+                                JSON.stringify({
+                                    confirmation : true,
+                                    authToken: jsonMessage["uuid"]
+                                })
+                            )
+                            connection.close()
+
+                        }
 
                     }
-
+        
                 }
     
-             }
- 
-        } 
+            } 
+        } catch (exception) {
+            console.log("QRCode Auth Exception: " + exception)
+
+        }
     
     })
 

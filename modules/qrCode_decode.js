@@ -49,7 +49,7 @@ qrCodeDecode_wss.on('connection', (connection) => {
                         
             
                     } catch (exception) {
-                        console.log("QRCode Auth Response Exception: " + exception)
+                        console.log("QRCode Decode Response Exception: " + exception)
 
 
                     }
@@ -60,7 +60,7 @@ qrCodeDecode_wss.on('connection', (connection) => {
             })
 
         } catch (exception) {
-            console.log("QRCode Auth Exception: " + exception)
+            console.log("QRCode Decode Exception: " + exception)
 
         }
         
