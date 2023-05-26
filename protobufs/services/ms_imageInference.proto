@@ -4,6 +4,8 @@ package imageInference;
 
 service ImageInferenceService {
     rpc PacientsAndEmotionsInference (InferenceRequest) returns (PacientsAndEmotionsInferenceReply) { }
+    rpc QRCodeDecode (InferenceRequest) returns (QRCodeContent) { }
+
 }
 
 message InferenceRequest {
@@ -43,6 +45,12 @@ message EmotionsDetected {
     repeated string categorical = 2;
 
 }
+
+message QRCodeContent {
+    string content = 1;
+
+}
+
 
 
 
