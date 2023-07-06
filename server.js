@@ -20,3 +20,10 @@ qrCodeAuth.SERVER.listen(9010, () => console.log("QRCode Authentication on port 
 
 const qrCodeDecode = require('./modules/qrCode_decode.js')
 qrCodeDecode.SERVER.listen(9020, () => console.log("QRCode Decode on port 9020"))
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+//                                                     QRCode Decode
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+const vrHealSession = require('./modules/vrHeal_session.js')
+vrHealSession.SERVER.listen(9030, () => console.log("VR Heal Session on port 9030"))

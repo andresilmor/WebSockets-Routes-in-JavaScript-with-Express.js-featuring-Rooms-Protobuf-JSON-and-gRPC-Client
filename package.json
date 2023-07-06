@@ -17,6 +17,7 @@
     "google-protobuf": "^3.21.2",
     "minimalist": "^1.0.0",
     "protobufjs": "^7.1.2",
+    "redis": "^4.6.7",
     "uuid": "^9.0.0",
     "ws": "^8.12.0"
   }

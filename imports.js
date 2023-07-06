@@ -6,6 +6,7 @@ const WebSocket = require('ws')
 const grpcClient = require('./grpc_client')
 const grpcAddress = require ('./grpc_address')
 const { v4: uuid } = require('uuid');
+const redis = require('redis');
 
 module.exports = {
     EXPRESS: express,
@@ -15,6 +16,7 @@ module.exports = {
     WEBSOCKET: WebSocket,
     GRPC_CLIENT: grpcClient,
     GRPC_ADDRESS: grpcAddress,
-    UUID: uuid
+    UUID: uuid,
+    REDIS: redis
 
 }

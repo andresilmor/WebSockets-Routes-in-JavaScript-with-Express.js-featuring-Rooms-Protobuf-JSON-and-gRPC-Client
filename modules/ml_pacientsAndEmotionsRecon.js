@@ -65,11 +65,10 @@ ml_imgInference_wss.on('connection', (connection) => {
             */
             //ws.binaryType = 'arraybuffer'
 
-            console.log(data)
         
         
             const client = new grpcClient.imageInference.ImageInferenceService(
-                grpcAddress,
+                grpcAddress.ADDRESS,
             
                 grpc.credentials.createInsecure()
             );
@@ -154,7 +153,7 @@ ml_imgInference_wss.on('connection', (connection) => {
                                 console.log(JSON.stringify(decoded))
                                 console.log("----")
                                 */
-                                //console.log(JSON.stringify(response))
+                                console.log(JSON.stringify(response))
                                 connection.send(JSON.stringify(response))
                                 //console.log("----")
                                 //console.log("And now it ends")

@@ -22,6 +22,7 @@ qrCodeAuth_wss.on('connection', (connection) => {
     let channel;
 
     connection.on('message', function incoming(data, isBinary) {
+        console.log(data.toString())
         try {
             const message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
@@ -32,8 +33,9 @@ qrCodeAuth_wss.on('connection', (connection) => {
                 channel = jsonMessage["channel"]
     
                 if (qrCodeAuth_clients[channel] == null) {
-                    qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "provider" : connection } 
-    
+                    if (jsonMessage["confirmation"] == null)
+                        qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "provider" : connection } 
+
                 } else {
                     if (qrCodeAuth_clients[channel]["requester"] == undefined || qrCodeAuth_clients[channel]["requester"] == null) {
                         qrCodeAuth_clients[channel] = { ...qrCodeAuth_clients[channel], "requester" : connection } 
