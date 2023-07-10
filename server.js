@@ -2,7 +2,7 @@
 //                                                     Machine Learning (Frame Inference)
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const ml_imgInference = require('./modules/ml_pacientsAndEmotionsRecon.js')
+const ml_imgInference = require('./server_modules/ml_pacientsAndEmotionsRecon.js')
 ml_imgInference.SERVER.listen(9000, () => console.log("Machine Learning (Image inference) on port 9000"))
 
 
@@ -10,7 +10,7 @@ ml_imgInference.SERVER.listen(9000, () => console.log("Machine Learning (Image i
 //                                                     QRCode Authentication
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const qrCodeAuth = require('./modules/qrCode_auth.js')
+const qrCodeAuth = require('./server_modules/qrCode_auth.js')
 qrCodeAuth.SERVER.listen(9010, () => console.log("QRCode Authentication on port 9010"))
 
 
@@ -18,12 +18,12 @@ qrCodeAuth.SERVER.listen(9010, () => console.log("QRCode Authentication on port 
 //                                                     QRCode Decode
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const qrCodeDecode = require('./modules/qrCode_decode.js')
+const qrCodeDecode = require('./server_modules/qrCode_decode.js')
 qrCodeDecode.SERVER.listen(9020, () => console.log("QRCode Decode on port 9020"))
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 //                                                     QRCode Decode
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const vrHealSession = require('./modules/vrHeal_session.js')
+const vrHealSession = require('./server_modules/vrHeal_session.js')
 vrHealSession.SERVER.listen(9030, () => console.log("VR Heal Session on port 9030"))

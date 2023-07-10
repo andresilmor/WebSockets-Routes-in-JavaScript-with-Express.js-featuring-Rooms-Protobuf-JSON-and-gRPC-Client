@@ -1,4 +1,6 @@
 const imports = require ('./../imports')
+const { promisify } = require("util");
+
 
 const express = imports.EXPRESS
 const WebSocket = imports.WEBSOCKET
@@ -11,7 +13,7 @@ const redisClient = redis.createClient({
     url: 'redis://default:EGGjURloNvz8K6fpudILQdYQWbEV8zhm@redis-19874.c233.eu-west-1-1.ec2.cloud.redislabs.com:19874'
   });
 
-await redisClient.connect();
+//redisClient.connect();
 
 
 
@@ -34,12 +36,14 @@ vrHealSession_wss.on('connection', (connection) => {
         try {
             const message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
-            console.log(redisClient.isReady)
-            console.log(redisClient.isOpen)   
-            await redisClient.set('key', 'value');
-            const value = await redisClient.get('key');
-            console.log(value)
-            redisClient.del('key');
+      
+            redisClient.set("key", "test2");
+            redisClient.get("key", function(err, reply) {
+                // reply is null when the key is missing
+                console.log(reply);
+              });
+
+   
 
         } catch (exception) {
             console.log("QRCode Auth Exception: " + exception)
