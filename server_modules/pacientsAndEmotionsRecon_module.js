@@ -13,12 +13,7 @@ const uuid = imports.UUID
 
 const ml_imgInference_clients = {};
 
-const ml_imgInference_app = express()
-const ml_imgInference_server = require('http').createServer(ml_imgInference_app)
-
-const ml_imgInference_wss = new WebSocket.Server( { server: ml_imgInference_server } )
-
-ml_imgInference_wss.on('connection', (connection) => {
+const connection = function(connection)  {
     console.log("A new client connected on Machine Learning (Image inference) on port 9000 ")
 
     const userId = uuid();
@@ -179,6 +174,6 @@ ml_imgInference_wss.on('connection', (connection) => {
         
     })
 
-})
+}
 
-module.exports = { SERVER: ml_imgInference_server }
+module.exports = { CONNECTION: connection }

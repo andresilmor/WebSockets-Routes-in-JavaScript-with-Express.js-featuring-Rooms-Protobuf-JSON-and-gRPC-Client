@@ -1,19 +1,12 @@
 const imports = require ('./../imports')
 
-const express = imports.EXPRESS
-const WebSocket = imports.WEBSOCKET
 const uuid = imports.UUID
 
 // --------------------------------------------------------------------------
 
 const qrCodeAuth_clients = {};
 
-const qrCodeAuth_app = express()
-const qrCodeAuth_server = require('http').createServer(qrCodeAuth_app)
-
-const qrCodeAuth_wss = new WebSocket.Server( { server: qrCodeAuth_server } )
-
-qrCodeAuth_wss.on('connection', (connection) => {
+const connection = function(connection)  {
     console.log("A new client connected on QRCode Authentication on port 9010")
 
     const userId = uuid();
@@ -93,6 +86,6 @@ qrCodeAuth_wss.on('connection', (connection) => {
         
     })
 
-})
+}
 
-module.exports = { SERVER: qrCodeAuth_server }
+module.exports = { CONNECTION: connection }

@@ -13,12 +13,8 @@ const uuid = imports.UUID
 
 const qrCodeDecode_clients = {};
 
-const qrCodeDecode_app = express()
-const qrCodeDecode_server = require('http').createServer(qrCodeDecode_app)
 
-const qrCodeDecode_wss = new WebSocket.Server( { server: qrCodeDecode_server } )
-
-qrCodeDecode_wss.on('connection', (connection) => {
+const connection = function(connection)  {
     console.log("A new client connected on QRCode Decode on port 9020")
 
     const userId = uuid();
@@ -76,6 +72,6 @@ qrCodeDecode_wss.on('connection', (connection) => {
     connection.on('open', () => {
         console.log("Connection Opened")
       });
-})
+}
 
-module.exports = { SERVER: qrCodeDecode_server }
+module.exports = { CONNECTION: connection }
