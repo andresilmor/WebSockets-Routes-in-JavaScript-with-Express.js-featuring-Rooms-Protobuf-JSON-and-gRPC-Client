@@ -44,7 +44,7 @@ qrCodeDecode_server.listen(9020, () => console.log("QRCode Decode on port 9020")
 //                                                     VR Heal Session
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const vrHeal_module = require('./server_modules/vrHeal_module.js')
+const vrHeal_module = require('./server_modules/vrHealSession_module.js')
 
 const vrHealSession_server_one = require('http').createServer(app)
 const vrHealSession_wss_one = new WebSocket.Server( { server: vrHealSession_server_one } )
