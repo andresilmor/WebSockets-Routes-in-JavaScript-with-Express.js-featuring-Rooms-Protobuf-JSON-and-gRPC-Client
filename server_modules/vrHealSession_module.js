@@ -105,20 +105,57 @@ const connection = function(connection)  {
                 break;
 
             case "connected":
+                if (!jsonMessage.hasOwnProperty("execute")) {
+                    if (userId == jsonMessage["managerUUID"]) {
+                        if (count == 0) {
+                            console.log(WhoAmI(jsonMessage) + " is Connected")
+                            //console.log(jsonMessage)
+                            connection.send(JSON.stringify(jsonMessage))
+                            /*
+                            {
+                            state: 'connected',
+                            managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
+                            applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
+                            channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
+                            }
 
-                if (userId == jsonMessage["managerUUID"]) {
-                    if (count == 0) {
+                            */
+                            count += 1
+
+                        }
+
+                    } else if (userId == jsonMessage["applicationUUID"]) {
                         console.log(WhoAmI(jsonMessage) + " is Connected")
-                        connection.send(JSON.stringify(jsonMessage))
+                        //console.log(jsonMessage)
+                         /*
+                            {
+                            state: 'connected',
+                            managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
+                            applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
+                            channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
+                            }
 
-                        count += 1
+                            */
+                        connection.send(JSON.stringify(jsonMessage))
 
                     }
 
-                } else if (userId == jsonMessage["applicationUUID"]) {
-                    console.log(WhoAmI(jsonMessage) + " is Connected")
+                } else {
+                 
+                    const execute = jsonMessage["execute"]
 
-                    connection.send(JSON.stringify(jsonMessage))
+                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                        console.log("Execute on " + WhoAmI(jsonMessage))
+                  
+                        connection.send(JSON.stringify(jsonMessage))
+
+                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                        console.log("Sending Return to " + WhoAmI(jsonMessage))
+                        console.log(jsonMessage)
+                        connection.send(JSON.stringify(jsonMessage))
+
+                    }
+  
 
                 }
 
@@ -160,7 +197,8 @@ const connection = function(connection)  {
         try {
             message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
-
+            
+            console.log(jsonMessage)
             if (jsonMessage["state"] == null)
                 return
                 
@@ -202,8 +240,6 @@ const connection = function(connection)  {
         
                 case "connecting":
 
-            
-                 
                     subscriber.unsubscribe();
                     subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
 
@@ -220,7 +256,16 @@ const connection = function(connection)  {
 
 
                 case "connected":
-                    console.log("here")
+                    message = {
+                        state: "connected",
+                        managerUUID: jsonMessage["managerUUID"],
+                        applicationUUID: jsonMessage["applicationUUID"],
+                        execute: jsonMessage["execute"],
+                        channel: jsonMessage["channel"],
+                    };
+
+                    publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+              
                     break;
                 
 
