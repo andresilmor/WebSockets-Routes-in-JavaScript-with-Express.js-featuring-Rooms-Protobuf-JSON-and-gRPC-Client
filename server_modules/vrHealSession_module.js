@@ -27,6 +27,8 @@ const connection = function(connection)  {
     shortId = 0;
     count = 0;
     const userId = uuid();
+
+    isValid = false
     
     subscriber.on("subscribe", function(channel, count) {
         console.log("Subscribed")
@@ -92,9 +94,11 @@ const connection = function(connection)  {
                           };
                         
                         publisher.publish(channelSuffix + jsonMessage["secretChannel"], JSON.stringify(message));
-
+          
                        
                     });
+
+                    return
 
                 }
                 
@@ -132,7 +136,7 @@ const connection = function(connection)  {
 
     async function GenerateShortID() {
         shortId = short()
-        await publisher.sismember('vrHeal_sessions', shortId, async function(err, reply) {
+        await publisher.sismember('vrHeal_sessions', channelSuffix +  shortId, async function(err, reply) {
             if (err) throw err;
             if (reply == 0)
                 return 
@@ -153,7 +157,6 @@ const connection = function(connection)  {
       }
 
     connection.on('message', async function incoming(data, isBinary) {
-
         try {
             message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
@@ -174,7 +177,7 @@ const connection = function(connection)  {
                     await GenerateShortID();
 
 
-                    publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
+                    //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
 
                     publisher.get(channelSuffix + shortId, function(err, reply) {
                         // reply is null when the key is missing
@@ -198,6 +201,10 @@ const connection = function(connection)  {
                     break;
         
                 case "connecting":
+
+            
+                 
+                    subscriber.unsubscribe();
                     subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
 
                     message = {
@@ -210,12 +217,18 @@ const connection = function(connection)  {
 
                     
                     break;
+
+
+                case "connected":
+                    console.log("here")
+                    break;
                 
 
             }
 
 
         } catch (exception) {
+            console.log(jsonMessage)
             console.log("QRCode Auth Exception: " + exception)
 
         }
