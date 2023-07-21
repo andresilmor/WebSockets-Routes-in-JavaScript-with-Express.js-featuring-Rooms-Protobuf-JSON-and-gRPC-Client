@@ -1,0 +1,6 @@
+package protoImage;
+syntax = "proto3";
+
+message ProtoImage {
+    bytes image = 1; 
+}

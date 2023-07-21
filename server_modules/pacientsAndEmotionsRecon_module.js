@@ -70,8 +70,8 @@ const connection = function(connection)  {
 
             var inferenceResult
             var request
-            protobuf.load("protobufs/messages/ImageInferenceRequest.proto", function(err, root) {
-                request = root.lookupType("imageInferenceRequest.ImageInferenceRequest");
+            protobuf.load("protobufs/messages/ProtoImage.proto", function(err, root) {
+                request = root.lookupType("protoImage.ProtoImage");
                 
                 //console.log("So it begins...")
 

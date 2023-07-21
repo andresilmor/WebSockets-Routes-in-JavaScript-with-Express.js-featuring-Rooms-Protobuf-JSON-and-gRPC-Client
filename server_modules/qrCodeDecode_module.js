@@ -33,8 +33,8 @@ const connection = function(connection)  {
             var inferenceResult
             var request
 
-            protobuf.load("protobufs/messages/ImageInferenceRequest.proto", function(err, root) {
-                request = root.lookupType("imageInferenceRequest.ImageInferenceRequest");
+            protobuf.load("protobufs/messages/ProtoImage.proto", function(err, root) {
+                request = root.lookupType("protoImage.ProtoImage");
     
                 var decoded = request.decode(new Uint8Array(data));
 

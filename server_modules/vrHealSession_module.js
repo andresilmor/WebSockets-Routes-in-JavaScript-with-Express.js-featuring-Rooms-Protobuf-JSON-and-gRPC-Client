@@ -8,16 +8,25 @@ const uuid = imports.UUID
 const redis = imports.REDIS 
 const short = require('shortid');
 
+const MongoClient = imports.MONGO_CLIENT;
+const ObjectId = imports.OBJECT_ID;
+const GridFSBucket = imports.GRID_FS_BUCKET;
+
+const mongodbUrl = imports.MONGO_URL;
+const dbName = "SessionMaterial";
+
+const fs = require('fs');
+
 // --------------------------------------------------------------------------
 
 const connection = function(connection)  {
 
-
+    var connWarning = {}
 
     const channelSuffix = "careXR_"
 
     const publisher = redis.createClient({
-        url: 'redis://default:EGGjURloNvz8K6fpudILQdYQWbEV8zhm@redis-19874.c233.eu-west-1-1.ec2.cloud.redislabs.com:19874'
+        url: imports.REDIS_URL
     });
     const subscriber = publisher.duplicate();
 
@@ -34,135 +43,285 @@ const connection = function(connection)  {
         console.log("Subscribed")
     });
       
-    subscriber.on("message", function(channel, data) {
+    subscriber.on("message", async function(channel, data) {
         message =  data.toString();
         const jsonMessage = JSON.parse(message)
 
-        if (jsonMessage["state"] == null)
-                return
-                
+        if (jsonMessage["state"] != null) {
+             
 
-        switch (jsonMessage["state"]) {
+            switch (jsonMessage["state"]) {
 
-            case "disconnected":
-                connection.close()
-                break;
+                case "disconnected":
+                    connection.close()
+                    break;
 
-            case "initialize":
-                if (userId == jsonMessage["applicationUUID"])
-                    connection.send(JSON.stringify(jsonMessage))
-                   
-                break;
+                case "initialize":
+                    if (userId == jsonMessage["applicationUUID"])
+                        connection.send(JSON.stringify(jsonMessage))
+                    
+                    break;
 
-            case "connecting":
+                case "connecting":
 
-                if (!jsonMessage.hasOwnProperty("applicationUUID") && userId != jsonMessage["managerUUID"]) {
-                  
-                    sessionChannel = uuid();
-
-                    message = {
-                        state: "connecting",
-                        managerUUID: jsonMessage["managerUUID"],
-                        applicationUUID: userId,
-                        channel: jsonMessage["channel"],
-                        secretChannel: sessionChannel,
-                      };
-
-                    publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
-
-                    return
-
-                }
-                
-                if (jsonMessage.hasOwnProperty("applicationUUID")) {
-                    subscriber.unsubscribe();
-
-                    sessionChannel = jsonMessage["secretChannel"]
-
-                    publisher.get(channelSuffix + jsonMessage["secretChannel"], function(err, reply) {
-           
-                        if (reply == null) {
-                            subscriber.subscribe(channelSuffix + jsonMessage["secretChannel"]);
-
-                        }
+                    if (!jsonMessage.hasOwnProperty("applicationUUID") && userId != jsonMessage["managerUUID"]) {
+                    
+                        sessionChannel = uuid();
 
                         message = {
-                            state: "connected",
+                            state: "connecting",
                             managerUUID: jsonMessage["managerUUID"],
-                            applicationUUID: jsonMessage["applicationUUID"],
-                            channel: jsonMessage["secretChannel"],
-                          };
-                        
-                        publisher.publish(channelSuffix + jsonMessage["secretChannel"], JSON.stringify(message));
-          
-                       
-                    });
+                            applicationUUID: userId,
+                            channel: jsonMessage["channel"],
+                            secretChannel: sessionChannel,
+                        };
 
-                    return
+                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
 
-                }
-                
-                break;
+                        return
 
-            case "connected":
-                if (!jsonMessage.hasOwnProperty("execute")) {
-                    if (userId == jsonMessage["managerUUID"]) {
-                        if (count == 0) {
-                            console.log(WhoAmI(jsonMessage) + " is Connected")
-                            //console.log(jsonMessage)
-                            connection.send(JSON.stringify(jsonMessage))
-                            /*
-                            {
-                            state: 'connected',
-                            managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
-                            applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
-                            channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
+                    }
+                    
+                    if (jsonMessage.hasOwnProperty("applicationUUID")) {
+                        subscriber.unsubscribe();
+
+                        sessionChannel = jsonMessage["secretChannel"]
+
+                        publisher.get(channelSuffix + jsonMessage["secretChannel"], function(err, reply) {
+            
+                            if (reply == null) {
+                                subscriber.subscribe(channelSuffix + jsonMessage["secretChannel"]);
+
                             }
 
-                            */
-                            count += 1
+                            message = {
+                                state: "connected",
+                                managerUUID: jsonMessage["managerUUID"],
+                                applicationUUID: jsonMessage["applicationUUID"],
+                                channel: jsonMessage["secretChannel"],
+                            };
+                            
+                            publisher.publish(channelSuffix + jsonMessage["secretChannel"], JSON.stringify(message));
+            
+                        
+                        });
+
+                        return
+
+                    }
+                    
+                    break;
+
+                case "connected":
+                    if (!jsonMessage.hasOwnProperty("execute")) {
+                        if (userId == jsonMessage["managerUUID"]) {
+                            if (count == 0) {
+                                console.log(WhoAmI(jsonMessage) + " is Connected")
+                                //console.log(jsonMessage)
+                                connection.send(JSON.stringify(jsonMessage))
+                                /*
+                                {
+                                state: 'connected',
+                                managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
+                                applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
+                                channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
+                                }
+
+                                */
+                                count += 1
+
+                            }
+
+                        } else if (userId == jsonMessage["applicationUUID"]) {
+                            console.log(WhoAmI(jsonMessage) + " is Connected")
+                            //console.log(jsonMessage)
+                            /*
+                                {
+                                state: 'connected',
+                                managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
+                                applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
+                                channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
+                                }
+
+                                */
+                            connection.send(JSON.stringify(jsonMessage))
 
                         }
 
-                    } else if (userId == jsonMessage["applicationUUID"]) {
-                        console.log(WhoAmI(jsonMessage) + " is Connected")
-                        //console.log(jsonMessage)
-                         /*
-                            {
-                            state: 'connected',
-                            managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
-                            applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
-                            channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
-                            }
+                    } else {
+                    
+                        const execute = jsonMessage["execute"]
+                        console.log("YO MAN")
+                        
+                        switch (execute["operation"]) {
+                            case "loadScene":
+                                if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                    console.log("Execute on " + WhoAmI(jsonMessage))
+                            
+                                    connection.send(JSON.stringify(jsonMessage))
 
-                            */
-                        connection.send(JSON.stringify(jsonMessage))
+                                } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                    console.log("Sending Return to " + WhoAmI(jsonMessage))
+                                    console.log(jsonMessage)
+                                    connection.send(JSON.stringify(jsonMessage))
+
+                                }
+                                break
+
+                            case "downloadHotspot":
+
+                                if (userId != jsonMessage["applicationUUID"])
+                                    return
+
+                                if (!execute.hasOwnProperty("unblocked")) {
+                                    console.log("here")
+                                    /*
+                                    var warningID = uuid();
+                                    message = {
+                                        warning: {
+                                            message: "protobuf_incoming",
+                                            to: jsonMessage["applicationUUID"], 
+                                            proto: "ProtoImage",
+                                            goal: "hotspotTexture"
+                                            blocked: jsonMessage
+
+                                        }
+
+                                    }
+
+                                    publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+                                    */
+
+
+                                    message = {
+                                        warning: {
+                                            message: "protobuf_incoming",
+                                            proto: "ProtoImage",
+                                            goal: "hotspotTexture",
+                                            to: userId,
+                                            blocked: jsonMessage
+
+                                        }
+
+                                    }
+
+                                    connection.send(JSON.stringify(message))
+
+                                } else {
+
+                                    console.log("im here now")
+                                    if (userId == jsonMessage["applicationUUID"]) {
+
+                                        const client = new MongoClient(mongodbUrl);
+
+                                        try {
+                                            await client.connect();
+
+                                            const db = client.db(dbName);
+                                            const collection = db.collection("360_hotspots");
+                                            const gridFSBucket = new GridFSBucket(db, { bucketName: "360_images" });
+
+                                            // Find the document by UUID
+                                            const document = await collection.findOne({ uuid });
+
+                                            if (!document) {
+                                                console.log("Document not found for the given UUID.");
+                                                return;
+                                            }
+
+                                            // Get the image ObjectId from the document
+                                            const imageObjectId = document.imageBytes;
+
+                                            // Measure the time taken to retrieve the image
+                                            const startTime = Date.now();
+
+                                            // Create a writable stream to store the image data
+                                            const imageChunks = [];
+                                            const downloadStream = gridFSBucket.openDownloadStream(imageObjectId);
+
+                                            // Event handler for data chunk received
+                                            downloadStream.on("data", (chunk) => {
+                                                imageChunks.push(chunk);
+
+                                                // Check if the file information is available
+                                                    if (downloadStream.file) {
+                                                        const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
+                                                        console.log(progress.toFixed(2) + "%");
+                                                    }
+
+                                            });
+
+                                            
+
+                                            // Event handler for error
+                                            downloadStream.on("error", (error) => {
+                                                console.error("Error retrieving image:", error.message);
+                                                client.close();
+                                            });
+
+                                            // Event handler for download completion
+                                            downloadStream.on("end", () => {
+                                                // Display other data from the document
+                                                console.log("UUID:", document.uuid);
+                                                console.log("Label:", document.label);
+                                                // Display other fields as needed
+
+                                                // Display the time taken to retrieve the image
+                                                const endTime = Date.now();
+                                                console.log("Image Retrieval Time:", (endTime - startTime) / 1000, "seconds");
+
+
+                                                /*
+                                                const imageFilePath = "retrieved_image.jpg"; // Replace with the desired file path
+                                                const imageStream = fs.createWriteStream(imageFilePath);
+
+                                                for (const chunk of imageChunks) {
+                                                    imageStream.write(chunk);
+                                                }
+                                                
+                                                imageStream.end();
+                                                */
+
+                                                const binaryImage = Buffer.concat(imageChunks);
+                                                console.log(WhoAmI(jsonMessage))
+                                                
+                                                client.close();
+
+                                               
+
+                                                //console.log(connWarning[warningID]["state"])
+
+                                                console.log("READY! GO!")
+                                                //connection.send(JSON.stringify(message))
+                                                //console.log(jsonMessage)
+
+                                            });
+                                        } catch (error) {
+                                            console.error("Error:", error.message);
+                                            client.close();
+                                        }
+
+                                    }
+
+                                }
+
+                                
+                        }
+    
 
                     }
 
-                } else {
-                 
-                    const execute = jsonMessage["execute"]
 
-                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
-                        console.log("Execute on " + WhoAmI(jsonMessage))
-                  
-                        connection.send(JSON.stringify(jsonMessage))
+                    break;
+            
+            
+            } 
 
-                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
-                        console.log("Sending Return to " + WhoAmI(jsonMessage))
-                        console.log(jsonMessage)
-                        connection.send(JSON.stringify(jsonMessage))
+        } else if (jsonMessage["warning"] != null) {
 
-                    }
-  
-
-                }
+            
 
 
-                break;
-        
-        
         }
             
     });
@@ -194,80 +353,129 @@ const connection = function(connection)  {
       }
 
     connection.on('message', async function incoming(data, isBinary) {
+        console.log("Message Received")
         try {
             message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
             
             console.log(jsonMessage)
-            if (jsonMessage["state"] == null)
-                return
+
+       
+
+            if (jsonMessage["state"] != null) {
+             
+                switch (jsonMessage["state"]) {
+
+                    case "initialize":
+                        if (jsonMessage.hasOwnProperty("channel")) {
+                            connection.close()
+                            return
+                        
+                        }
+
+                        await GenerateShortID();
+
+
+                        //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
+
+                        publisher.get(channelSuffix + shortId, function(err, reply) {
+                            // reply is null when the key is missing
+
+                            if (reply == null) {
+                                subscriber.subscribe(channelSuffix + shortId);
+
+                            }
+
+                            message = {
+                                state: "initialize",
+                                applicationUUID: userId,
+                                channel: shortId,
+                            };
+
+                            publisher.publish(channelSuffix + shortId, JSON.stringify(message));
+
+                            
+
+                        });
+                        break;
+            
+                    case "connecting":
+
+                        subscriber.unsubscribe();
+                        subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
+
+                        message = {
+                            state: "connecting",
+                            managerUUID: userId,
+                            channel: jsonMessage["channel"],
+                        };
+
+                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+
+                        
+                        break;
+
+
+                    case "connected":
+                        message = {
+                            state: "connected",
+                            managerUUID: jsonMessage["managerUUID"],
+                            applicationUUID: jsonMessage["applicationUUID"],
+                            execute: jsonMessage["execute"],
+                            channel: jsonMessage["channel"],
+                        };
+
+                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
                 
-
-            switch (jsonMessage["state"]) {
-
-                case "initialize":
-                    if (jsonMessage.hasOwnProperty("channel")) {
-                        connection.close()
-                        return
+                        break;
                     
-                    }
 
-                    await GenerateShortID();
+                }
+                
+            } else if (jsonMessage["warning"] != null) {
+                console.log("> 1")
+                switch (jsonMessage["warning"]["message"]) {
+                    
+                    case "protobuf_incoming":
 
+                        if (userId == jsonMessage["warning"]["to"]) {
+                         
+                            switch (jsonMessage["warning"]["message"]) {
+                                case "protobuf_incoming":
+                                    if (jsonMessage["warning"]["response"] != true )
+                                        return
 
-                    //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
+                                    var execute = jsonMessage["warning"]["blocked"]["execute"]
+            
+                                    execute["unblocked"] = true
+                                    jsonMessage["warning"]["blocked"]["execute"] = execute
+                            
+                                    publisher.publish(channelSuffix + jsonMessage["warning"]["blocked"]["channel"], JSON.stringify(jsonMessage["warning"]["blocked"]));
+                                    break
+            
+                            }
+            
+                        }
 
-                    publisher.get(channelSuffix + shortId, function(err, reply) {
-                        // reply is null when the key is missing
+                        /*
+                        message = {
+                            warning: {
+                                message: "protobuf_incoming",
+                                to: jsonMessage["applicationUUID"], 
+                                proto: "ProtoImage",
+                                goal: "hotspotTexture"
+                                blocked: jsonMessage
 
-                        if (reply == null) {
-                            subscriber.subscribe(channelSuffix + shortId);
+                            }
 
                         }
 
-                        message = {
-                            state: "initialize",
-                            applicationUUID: userId,
-                            channel: shortId,
-                          };
+                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+                        */
 
-                        publisher.publish(channelSuffix + shortId, JSON.stringify(message));
+                        break
 
-                        
-
-                    });
-                    break;
-        
-                case "connecting":
-
-                    subscriber.unsubscribe();
-                    subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
-
-                    message = {
-                        state: "connecting",
-                        managerUUID: userId,
-                        channel: jsonMessage["channel"],
-                    };
-
-                    publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
-
-                    
-                    break;
-
-
-                case "connected":
-                    message = {
-                        state: "connected",
-                        managerUUID: jsonMessage["managerUUID"],
-                        applicationUUID: jsonMessage["applicationUUID"],
-                        execute: jsonMessage["execute"],
-                        channel: jsonMessage["channel"],
-                    };
-
-                    publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
-              
-                    break;
-                
+                }
 
             }
 
