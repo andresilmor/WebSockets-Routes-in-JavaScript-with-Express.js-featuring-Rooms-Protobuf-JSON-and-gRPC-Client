@@ -8,6 +8,11 @@ const uuid = imports.UUID
 const redis = imports.REDIS 
 const short = require('shortid');
 
+const grpc = imports.GRPC
+const grpcClient = imports.GRPC_CLIENT
+const grpcAddress = imports.GRPC_ADDRESS
+var protobuf = imports.PROTOBUF
+
 const MongoClient = imports.MONGO_CLIENT;
 const ObjectId = imports.OBJECT_ID;
 const GridFSBucket = imports.GRID_FS_BUCKET;
@@ -116,34 +121,14 @@ const connection = function(connection)  {
                     if (!jsonMessage.hasOwnProperty("execute")) {
                         if (userId == jsonMessage["managerUUID"]) {
                             if (count == 0) {
-                                console.log(WhoAmI(jsonMessage) + " is Connected")
-                                //console.log(jsonMessage)
                                 connection.send(JSON.stringify(jsonMessage))
-                                /*
-                                {
-                                state: 'connected',
-                                managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
-                                applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
-                                channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
-                                }
-
-                                */
+                               
                                 count += 1
 
                             }
 
                         } else if (userId == jsonMessage["applicationUUID"]) {
-                            console.log(WhoAmI(jsonMessage) + " is Connected")
-                            //console.log(jsonMessage)
-                            /*
-                                {
-                                state: 'connected',
-                                managerUUID: '68a7f4fd-27f9-4a89-a016-216c5036e325',
-                                applicationUUID: '8134fc33-bdaf-4eba-a96b-2880bf5fa698',
-                                channel: '87ee6209-40c6-4f0b-a549-4968559a3997'
-                                }
-
-                                */
+                     
                             connection.send(JSON.stringify(jsonMessage))
 
                         }
@@ -151,18 +136,18 @@ const connection = function(connection)  {
                     } else {
                     
                         const execute = jsonMessage["execute"]
-                        console.log("YO MAN")
+                        //console.log("YO MAN")
                         
                         switch (execute["operation"]) {
                             case "loadScene":
                                 if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
-                                    console.log("Execute on " + WhoAmI(jsonMessage))
+                                    //console.log("Execute on " + WhoAmI(jsonMessage))
                             
                                     connection.send(JSON.stringify(jsonMessage))
 
                                 } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
-                                    console.log("Sending Return to " + WhoAmI(jsonMessage))
-                                    console.log(jsonMessage)
+                                    //console.log("Sending Return to " + WhoAmI(jsonMessage))
+                                    //console.log(jsonMessage)
                                     connection.send(JSON.stringify(jsonMessage))
 
                                 }
@@ -174,25 +159,6 @@ const connection = function(connection)  {
                                     return
 
                                 if (!execute.hasOwnProperty("unblocked")) {
-                                    console.log("here")
-                                    /*
-                                    var warningID = uuid();
-                                    message = {
-                                        warning: {
-                                            message: "protobuf_incoming",
-                                            to: jsonMessage["applicationUUID"], 
-                                            proto: "ProtoImage",
-                                            goal: "hotspotTexture"
-                                            blocked: jsonMessage
-
-                                        }
-
-                                    }
-
-                                    publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
-                                    */
-
-
                                     message = {
                                         warning: {
                                             message: "protobuf_incoming",
@@ -209,7 +175,6 @@ const connection = function(connection)  {
 
                                 } else {
 
-                                    console.log("im here now")
                                     if (userId == jsonMessage["applicationUUID"]) {
 
                                         const client = new MongoClient(mongodbUrl);
@@ -246,54 +211,60 @@ const connection = function(connection)  {
                                                 // Check if the file information is available
                                                     if (downloadStream.file) {
                                                         const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
-                                                        console.log(progress.toFixed(2) + "%");
+                                                        //console.log(progress.toFixed(2) + "%");
                                                     }
 
                                             });
 
                                             
 
-                                            // Event handler for error
                                             downloadStream.on("error", (error) => {
                                                 console.error("Error retrieving image:", error.message);
                                                 client.close();
                                             });
 
-                                            // Event handler for download completion
                                             downloadStream.on("end", () => {
-                                                // Display other data from the document
-                                                console.log("UUID:", document.uuid);
-                                                console.log("Label:", document.label);
-                                                // Display other fields as needed
-
-                                                // Display the time taken to retrieve the image
-                                                const endTime = Date.now();
-                                                console.log("Image Retrieval Time:", (endTime - startTime) / 1000, "seconds");
-
-
-                                                /*
-                                                const imageFilePath = "retrieved_image.jpg"; // Replace with the desired file path
-                                                const imageStream = fs.createWriteStream(imageFilePath);
-
-                                                for (const chunk of imageChunks) {
-                                                    imageStream.write(chunk);
-                                                }
-                                                
-                                                imageStream.end();
-                                                */
-
+                                        
                                                 const binaryImage = Buffer.concat(imageChunks);
-                                                console.log(WhoAmI(jsonMessage))
                                                 
                                                 client.close();
 
-                                               
+                                                protobuf.load("protobufs/messages/ProtoImage.proto", function(err, root) {
+                                                    const protoImage = root.lookupType("protoImage.ProtoImage"); 
+                                                    const protoMessage = protoImage.encode({ image: binaryImage }).finish();
+                                                    //console.log(Buffer.isBuffer(protoMessage));
 
-                                                //console.log(connWarning[warningID]["state"])
+                                                    connection.send(protoMessage)
 
-                                                console.log("READY! GO!")
-                                                //connection.send(JSON.stringify(message))
-                                                //console.log(jsonMessage)
+                                                    jsonMessage["execute"] = {
+                                                        requester: jsonMessage["execute"]["requester"],
+                                                        responder: jsonMessage["execute"]["responder"],
+                                                        operation: jsonMessage["execute"]["operation"],
+                                                        params: {
+                                                            uuid: document["uuid"],
+                                                            label: document["label"],
+                                                            imageHeight: document["imageHeight"],
+                                                            imageWidth: document["imageWidth"],
+                                                            mapping: document["mapping"]
+
+                                                        }
+
+                                                    }
+
+                                                    message = {
+                                                        state: jsonMessage["state"],
+                                                        managerUUID: jsonMessage["managerUUID"],
+                                                        applicationUUID: jsonMessage["applicationUUID"],
+                                                        execute: jsonMessage["execute"],
+                                                        channel: jsonMessage["channel"],
+                                                    };
+
+                                                    console.log("AQUI")
+                                                    console.log(message)
+
+                                                    connection.send(JSON.stringify(message))
+
+                                                })
 
                                             });
                                         } catch (error) {
@@ -315,6 +286,32 @@ const connection = function(connection)  {
                     break;
             
             
+                case "running":
+                    if (!jsonMessage.hasOwnProperty("execute")) {
+                    
+
+                    } else {
+                        const execute = jsonMessage["execute"]
+                        //console.log("YO MAN")
+                        
+                        switch (execute["operation"]) {
+                            case "downloadHotspot":
+                                if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                    
+                                } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                   
+                                    connection.send(JSON.stringify(jsonMessage))
+
+                                }
+                                break;
+                        
+                        }
+                        
+
+                    }
+                
+                    break;
+                
             } 
 
         } else if (jsonMessage["warning"] != null) {
@@ -351,6 +348,9 @@ const connection = function(connection)  {
 
         return "Man... "
       }
+
+
+    // ---------------------------------------------------------------------------------------------------------------------
 
     connection.on('message', async function incoming(data, isBinary) {
         console.log("Message Received")
@@ -428,12 +428,17 @@ const connection = function(connection)  {
                         publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
                 
                         break;
+
+                    case "running":
+                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(jsonMessage));
+                        break;
+
                     
 
                 }
                 
             } else if (jsonMessage["warning"] != null) {
-                console.log("> 1")
+                //console.log("> 1")
                 switch (jsonMessage["warning"]["message"]) {
                     
                     case "protobuf_incoming":

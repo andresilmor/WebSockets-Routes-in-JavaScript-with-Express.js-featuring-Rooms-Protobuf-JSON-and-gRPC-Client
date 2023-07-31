@@ -44,14 +44,31 @@ qrCodeDecode_server.listen(9020, () => console.log("QRCode Decode on port 9020")
 //                                                     VR Heal Session
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const vrHeal_module = require('./server_modules/vrHealSession_module.js')
+const vrHealSession_module = require('./server_modules/vrHealSession_module.js')
 
 const vrHealSession_server_one = require('http').createServer(app)
 const vrHealSession_wss_one = new WebSocket.Server( { server: vrHealSession_server_one } )
-vrHealSession_wss_one.on('connection', vrHeal_module.CONNECTION)
+vrHealSession_wss_one.on('connection', vrHealSession_module.CONNECTION)
 vrHealSession_server_one.listen(9030, () => console.log("VR Heal Session on port 9030"))
 
 const vrHealSession_server_two = require('http').createServer(app)
 const vrHealSession_wss_two = new WebSocket.Server( { server: vrHealSession_server_two } )
-vrHealSession_wss_two.on('connection', vrHeal_module.CONNECTION)
+vrHealSession_wss_two.on('connection', vrHealSession_module.CONNECTION)
 vrHealSession_server_two.listen(9031, () => console.log("VR Heal Session on port 9031"))
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+//                                                     VR Heal Session Stream
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+const vrHealSessionPanoramicStream_module = require('./server_modules/vrHealSessionPanoramicStream_module.js')
+
+const vrHealSessionPanoramicStream_server_one = require('http').createServer(app)
+const vrHealSessionPanoramicStream_wss_one = new WebSocket.Server( { server: vrHealSessionPanoramicStream_server_one } )
+vrHealSessionPanoramicStream_wss_one.on('connection', vrHealSessionPanoramicStream_module.CONNECTION)
+vrHealSessionPanoramicStream_server_one.listen(9040, () => console.log("VR Heal Session Stream on port 9040"))
+
+const vrHealSessionPanoramicStream_server_two = require('http').createServer(app)
+const vrHealSessionPanoramicStream_wss_two = new WebSocket.Server( { server: vrHealSessionPanoramicStream_server_two } )
+vrHealSessionPanoramicStream_wss_two.on('connection', vrHealSessionPanoramicStream_module.CONNECTION)
+vrHealSessionPanoramicStream_server_two.listen(9041, () => console.log("VR Heal Session Stream on port 9041"))
+

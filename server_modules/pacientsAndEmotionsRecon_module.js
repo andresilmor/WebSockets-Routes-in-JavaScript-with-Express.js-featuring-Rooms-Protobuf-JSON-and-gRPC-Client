@@ -3,10 +3,10 @@ const imports = require ('./../imports')
 const express = imports.EXPRESS
 const parseArgs = imports.PARSE_ARGS
 const grpc = imports.GRPC
-var protobuf = imports.PROTOBUF
-const WebSocket = imports.WEBSOCKET
 const grpcClient = imports.GRPC_CLIENT
 const grpcAddress = imports.GRPC_ADDRESS
+var protobuf = imports.PROTOBUF
+const WebSocket = imports.WEBSOCKET
 const uuid = imports.UUID
 
 // --------------------------------------------------------------------------
