@@ -26,8 +26,7 @@ const fs = require('fs');
 
 const connection = function(connection)  {
 
-    var connWarning = {}
-
+    
     const channelSuffix = "careXR_"
 
     const publisher = redis.createClient({
@@ -70,6 +69,13 @@ const connection = function(connection)  {
                     break;
 
                 case "initialize":
+                    if (userId == jsonMessage["applicationUUID"]) 
+                        connection.send(JSON.stringify(jsonMessage))
+                
+                    
+                    break;
+
+                case "streaming":
                     console.log("----here")
                     console.log(jsonMessage["streamerUUID"])
                     console.log(userId)
@@ -80,15 +86,6 @@ const connection = function(connection)  {
                     }
                     break;
 
-                case "connecting":
-
-              
-                    break;
-
-                case "streaming":
-                
-
-                    break;
             
             
             } 
@@ -144,34 +141,30 @@ const connection = function(connection)  {
                         
                         }
 
-                        userId = jsonMessage["streamerUUID"]
+                        let channel = uuid()
 
-                        publisher.get(channelSuffix + streamChannel, function(err, reply) {
+                        //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
+
+                        publisher.get(channelSuffix + channel, function(err, reply) {
                             // reply is null when the key is missing
 
                             if (reply == null) {
-                                subscriber.subscribe(channelSuffix + streamChannel);
+                                subscriber.subscribe(channelSuffix + channel);
 
                             }
 
                             message = {
                                 state: "initialize",
-                                streamerUUID: jsonMessage["streamerUUID"],
-                                channel: streamChannel,
+                                applicationUUID: userId,
+                                streamChannel: channel,
                             };
 
-                            publisher.publish(channelSuffix + streamChannel, JSON.stringify(message));
+                            publisher.publish(channelSuffix + channel, JSON.stringify(message));
 
                             
 
                         });
                         break;
-            
-                    case "connecting":
-
-               
-                        break;
-
 
                     case "streaming":
               

@@ -22,6 +22,7 @@ const connection = function(connection)  {
     console.log("Client UUID: " + userId)
 
     connection.on('message', function incoming(data) {
+        console.log("here")
         try {
 
             const client = new grpcClient.imageInference.ImageInferenceService(
@@ -40,7 +41,7 @@ const connection = function(connection)  {
 
                 client.QRCodeDecode({ image: decoded['image'] }, function (err, response) {
                     try {
-                        console.log(response)
+                        console.log("Decoded" + response)
                         connection.send(JSON.stringify(response["content"]))
                         
             

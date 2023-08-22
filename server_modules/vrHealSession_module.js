@@ -304,6 +304,16 @@ const connection = function(connection)  {
 
                                 }
                                 break;
+
+                            case "startExercise":
+                                if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                    connection.send(JSON.stringify(jsonMessage))
+
+                                } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                   
+
+                                }
+                                break;
                         
                         }
                         
