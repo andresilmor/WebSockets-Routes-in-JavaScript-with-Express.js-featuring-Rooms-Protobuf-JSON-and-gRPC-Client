@@ -45,6 +45,7 @@ const connection = function(connection)  {
     //connection.send(JSON.stringify(message))
 
     let streamChannel = uuid();
+    let receiverUUID;
     shortId = 0;
     count = 0;
     userId = uuid();
@@ -58,7 +59,7 @@ const connection = function(connection)  {
     subscriber.on("message", async function(channel, data) {
         message =  data.toString();
         const jsonMessage = JSON.parse(message)
-        console.log(jsonMessage)
+        
         if (jsonMessage["state"] != null) {
              
 
@@ -69,20 +70,17 @@ const connection = function(connection)  {
                     break;
 
                 case "initialize":
-                    if (userId == jsonMessage["applicationUUID"]) 
-                        connection.send(JSON.stringify(jsonMessage))
-                
+                    //if (userId == jsonMessage["applicationUUID"])  {
+                        console.log(JSON.stringify(jsonMessage))
+                        console.log("|||||||||||||||||||||||||||||||||||||||||||||||||||||||")
+            
                     
                     break;
 
                 case "streaming":
-                    console.log("----here")
-                    console.log(jsonMessage["streamerUUID"])
-                    console.log(userId)
+                    console.log(jsonMessage)
                     if (userId == jsonMessage["streamerUUID"]) {
-                        console.log("das")
-                        connection.send(JSON.stringify(jsonMessage))
-                        console.log("das")
+                        
                     }
                     break;
 
@@ -129,44 +127,54 @@ const connection = function(connection)  {
             message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
             
-            console.log(jsonMessage)
             if (jsonMessage["state"] != null) {
              
                 switch (jsonMessage["state"]) {
 
                     case "initialize":
-                        if (jsonMessage.hasOwnProperty("channel")) {
-                            connection.close()
-                            return
+                    //if (userId == jsonMessage["applicationUUID"])  {
+                        console.log(">|||||||||||||||||||||||||||||||||||||||||||||||||||||||")
+                        console.log(JSON.stringify(jsonMessage))
+                        console.log(">|||||||||||||||||||||||||||||||||||||||||||||||||||||||")
+                        streamChannel = jsonMessage["streamChannel"]
+                        receiverUUID = jsonMessage["receiverUUID"]
+
+                        message = {
+                            state: "initialize",
+                            streamerUUID: userId,
+                            receiverUUID: receiverUUID,
+                            streamChannel: streamChannel
+                            
+                        };
+
+                        publisher.get(channelSuffix + streamChannel, function(err, reply) {
+            
+
+                            publisher.publish(channelSuffix + streamChannel, JSON.stringify(message));
+
                         
-                        }
+                        });
 
-                        let channel = uuid()
+                        connection.send(JSON.stringify(message))
+                        
+                    
+                    break;
 
-                        //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
+                    case "streaming":
+                        if (jsonMessage["state"] != null) {
 
-                        publisher.get(channelSuffix + channel, function(err, reply) {
-                            // reply is null when the key is missing
+                            if (jsonMessage["streamerUUID"] == userId) {
+                                console.log("STREAMING")
+                                console.log(jsonMessage)
 
-                            if (reply == null) {
-                                subscriber.subscribe(channelSuffix + channel);
+                                publisher.get(channelSuffix + jsonMessage["streamChannel"], function(err, reply) {
+                                    publisher.publish(channelSuffix + jsonMessage["streamChannel"], JSON.stringify(jsonMessage));
+                    
+                                });
 
                             }
 
-                            message = {
-                                state: "initialize",
-                                applicationUUID: userId,
-                                streamChannel: channel,
-                            };
-
-                            publisher.publish(channelSuffix + channel, JSON.stringify(message));
-
-                            
-
-                        });
-                        break;
-
-                    case "streaming":
+                        }
               
                         break;
 

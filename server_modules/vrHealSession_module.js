@@ -17,6 +17,8 @@ const MongoClient = imports.MONGO_CLIENT;
 const ObjectId = imports.OBJECT_ID;
 const GridFSBucket = imports.GRID_FS_BUCKET;
 
+const jimp = imports.JIMP;
+
 const mongodbUrl = imports.MONGO_URL;
 const dbName = "SessionMaterial";
 
@@ -187,6 +189,12 @@ const connection = function(connection)  {
                                             const gridFSBucket = new GridFSBucket(db, { bucketName: "360_images" });
 
                                             // Find the document by UUID
+                                            console.log("................sadasdasdsadas")
+                                            
+                                            console.log(jsonMessage)
+                                            var hotspotUUID = jsonMessage["execute"]["params"]["hotspotUUID"]
+                                            console.log(hotspotUUID)
+                                            console.log("................sadasdasdsadas")
                                             const document = await collection.findOne({ uuid });
 
                                             if (!document) {
@@ -211,7 +219,7 @@ const connection = function(connection)  {
                                                 // Check if the file information is available
                                                     if (downloadStream.file) {
                                                         const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
-                                                        //console.log(progress.toFixed(2) + "%");
+                                                        console.log(progress.toFixed(2) + "%");
                                                     }
 
                                             });
@@ -228,7 +236,7 @@ const connection = function(connection)  {
                                                 const binaryImage = Buffer.concat(imageChunks);
                                                 
                                                 client.close();
-
+                                                
                                                 protobuf.load("protobufs/messages/ProtoImage.proto", function(err, root) {
                                                     const protoImage = root.lookupType("protoImage.ProtoImage"); 
                                                     const protoMessage = protoImage.encode({ image: binaryImage }).finish();
@@ -293,14 +301,102 @@ const connection = function(connection)  {
                     } else {
                         const execute = jsonMessage["execute"]
                         //console.log("YO MAN")
-                        
                         switch (execute["operation"]) {
                             case "downloadHotspot":
-                                if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
-                                    
+                                if (execute.hasOwnProperty("params") && execute["requester"] == userId) {
+                                  
                                 } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
-                                   
-                                    connection.send(JSON.stringify(jsonMessage))
+                                    console.log("YO IM HERWE!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                                    console.log(WhoAmI(jsonMessage))
+                                    
+                                    console.log("-----------------------------------------------")
+                                    console.log(jsonMessage)
+                                    console.log("-----------------------------------------------")
+
+                                    const client = new MongoClient(mongodbUrl);
+
+                                    try {
+                                            await client.connect();
+
+                                            const db = client.db(dbName);
+                                            const collection = db.collection("360_hotspots");
+                                            const gridFSBucket = new GridFSBucket(db, { bucketName: "360_images" });
+
+                                            // Find the document by UUID
+                                            imageUUID = jsonMessage["execute"]["return"]["exerciseEnvUUID"]
+                                            console.log(imageUUID)
+                                            const document = await collection.findOne({ uuid: imageUUID });
+
+                                            if (!document) {
+                                                console.log("Document not found for the given UUID.");
+                                                return;
+                                            }
+
+                                            // Get the image ObjectId from the document
+                                            const imageObjectId = document.imageBytes;
+
+                                            // Measure the time taken to retrieve the image
+                                            const startTime = Date.now();
+
+                                            // Create a writable stream to store the image data
+                                            const imageChunks = [];
+                                            const downloadStream = gridFSBucket.openDownloadStream(imageObjectId);
+
+                                            // Event handler for data chunk received
+                                            downloadStream.on("data", (chunk) => {
+                                                imageChunks.push(chunk);
+
+                                                // Check if the file information is available
+                                                    if (downloadStream.file) {
+                                                        const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
+                                                        console.log(progress.toFixed(2) + "%");
+                                                    }
+
+                                            });
+
+                                            downloadStream.on("error", (error) => {
+                                                console.error("Error retrieving image:", error.message);
+                                                client.close();
+                                            });
+
+                                            downloadStream.on("end", () => {
+                                        
+                                                const binaryImage = Buffer.concat(imageChunks);
+                                                
+                                                client.close();
+                                                
+                                                jimp.read(binaryImage).then((image) => {
+                                                    image.resize(1400, jimp.AUTO);
+
+                                                    image.getBase64(image.getMIME(), (err, base64) => {
+
+                                                        jsonMessage["execute"]["return"]["imageHeight"] = document["imageHeight"]
+                                                        jsonMessage["execute"]["return"]["imageWidth"] = document["imageWidth"]
+                                                        jsonMessage["execute"]["return"]["mapping"] = document["mapping"]     
+                                                        
+                                                        jsonMessage["execute"]["return"]["imageBase64"] = base64
+                                                        
+                                                        // PUT HERE TO SEND BASE64
+                                                        
+                                                        connection.send(JSON.stringify(jsonMessage))
+                                                        
+                                                    })
+                                                })
+                                                .catch((err) => {
+                                                    console.log(err)
+                                                });
+
+                                                
+
+                                            });
+                                        } catch (error) {
+                                            console.error("Error:", error.message);
+                                            client.close();
+                                        }
+/*
+                                    
+   */                                 
+
 
                                 }
                                 break;
@@ -314,6 +410,47 @@ const connection = function(connection)  {
 
                                 }
                                 break;
+
+                            case "pauseExercise":
+                                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+    
+                                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+
+                                    }
+                                    break;
+
+                            case "continueExercise":
+                                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+    
+                                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+                                       
+                                    }
+                                    break;
+
+                            case "restartExercise":
+                                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+    
+                                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+                                       
+                                    }
+                                    break;
+
+                            case "stopExercise":
+                                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+    
+                                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+                                       
+                                    }
+                                    break;
+                        
                         
                         }
                         
@@ -466,6 +603,10 @@ const connection = function(connection)  {
                                     jsonMessage["warning"]["blocked"]["execute"] = execute
                             
                                     publisher.publish(channelSuffix + jsonMessage["warning"]["blocked"]["channel"], JSON.stringify(jsonMessage["warning"]["blocked"]));
+                                    
+
+
+
                                     break
             
                             }

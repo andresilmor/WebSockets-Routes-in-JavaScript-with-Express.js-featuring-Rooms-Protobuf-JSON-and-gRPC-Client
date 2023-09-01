@@ -7,6 +7,7 @@ const grpcClient = require('./grpc_client')
 const grpcAddress = require ('./grpc_address')
 const { v4: uuid } = require('uuid');
 const redis = require('redis');
+const jimp = require("jimp");
 
 const { MongoClient, ObjectId } = require("mongodb");
 const GridFSBucket = require("mongodb").GridFSBucket;
@@ -28,6 +29,7 @@ module.exports = {
     MONGO_CLIENT: MongoClient,
     OBJECT_ID: ObjectId,
     MONGO_URL: MongoDB_URL,
-    REDIS_URL: Redis_URL
+    REDIS_URL: Redis_URL,
+    JIMP: jimp
 
 }
