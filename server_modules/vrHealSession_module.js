@@ -64,9 +64,6 @@ const connection = function(connection)  {
                     break;
 
                 case "initialize":
-                    if (userId == jsonMessage["applicationUUID"])
-                        connection.send(JSON.stringify(jsonMessage))
-                    
                     break;
 
                 case "connecting":
@@ -74,6 +71,7 @@ const connection = function(connection)  {
                     if (!jsonMessage.hasOwnProperty("applicationUUID") && userId != jsonMessage["managerUUID"]) {
                     
                         sessionChannel = uuid();
+
 
                         message = {
                             state: "connecting",
@@ -83,7 +81,11 @@ const connection = function(connection)  {
                             secretChannel: sessionChannel,
                         };
 
-                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+                        publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
+                            publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+
+                        });  
+
 
                         return
 
@@ -376,8 +378,6 @@ const connection = function(connection)  {
                                                         
                                                         jsonMessage["execute"]["return"]["imageBase64"] = base64
                                                         
-                                                        // PUT HERE TO SEND BASE64
-                                                        
                                                         connection.send(JSON.stringify(jsonMessage))
                                                         
                                                     })
@@ -522,7 +522,7 @@ const connection = function(connection)  {
 
                         await GenerateShortID();
 
-
+                        console.log("1 - " + shortId)
                         //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
 
                         publisher.get(channelSuffix + shortId, function(err, reply) {
@@ -539,8 +539,10 @@ const connection = function(connection)  {
                                 channel: shortId,
                             };
 
-                            publisher.publish(channelSuffix + shortId, JSON.stringify(message));
+                            console.log("publishing")
+                            publisher.publish(channelSuffix + message["channel"], JSON.stringify(message));
 
+                            connection.send(JSON.stringify(message))
                             
 
                         });
@@ -548,17 +550,23 @@ const connection = function(connection)  {
             
                     case "connecting":
 
-                        subscriber.unsubscribe();
-                        subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
+                        if (jsonMessage["channel"] != shortId) {
 
-                        message = {
-                            state: "connecting",
-                            managerUUID: userId,
-                            channel: jsonMessage["channel"],
-                        };
+                            subscriber.unsubscribe()
+                            subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
 
-                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+                            message = {
+                                state: "connecting",
+                                managerUUID: userId,
+                                channel: jsonMessage["channel"],
+                            };
 
+                            publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
+                                publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+
+                            });    
+
+                        }
                         
                         break;
 
@@ -572,12 +580,19 @@ const connection = function(connection)  {
                             channel: jsonMessage["channel"],
                         };
 
-                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+                        publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
+                            publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
+
+                        });    
                 
                         break;
 
                     case "running":
-                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(jsonMessage));
+                        publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
+                            publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(jsonMessage));
+
+                        });    
+
                         break;
 
                     
