@@ -22,6 +22,7 @@ const jimp = imports.JIMP;
 const mongodbUrl = imports.MONGO_URL;
 const dbName = "SessionMaterial";
 
+
 const fs = require('fs');
 
 // --------------------------------------------------------------------------
@@ -45,6 +46,8 @@ const connection = function(connection)  {
     const userId = uuid();
 
     isValid = false
+
+    
     
     subscriber.on("subscribe", function(channel, count) {
         console.log("Subscribed")
@@ -122,7 +125,15 @@ const connection = function(connection)  {
                     break;
 
                 case "connected":
-                    if (!jsonMessage.hasOwnProperty("execute")) {
+                    console.log(".....")
+                    console.log(jsonMessage)
+                    console.log("'''''")
+
+                    
+
+                    
+                    if (!jsonMessage.hasOwnProperty("execute") ) {
+
                         if (userId == jsonMessage["managerUUID"]) {
                             if (count == 0) {
                                 connection.send(JSON.stringify(jsonMessage))
@@ -137,7 +148,39 @@ const connection = function(connection)  {
 
                         }
 
-                    } else {
+                        /*
+                        if ( !jsonMessage.hasOwnProperty("manager_connected") && userId == jsonMessage["managerUUID"]) {
+                            console.log("Connected: Web Application")
+                            connection.send(JSON.stringify(jsonMessage))
+
+                            jsonMessage["manager_connected"] = true;
+
+                            connected = true;
+
+                          
+
+                        } 
+                        if (!jsonMessage.hasOwnProperty("application_connected") && userId == jsonMessage["applicationUUID"]) {
+                            console.log("Connected: VR Application")
+                            connection.send(JSON.stringify(jsonMessage))
+
+                            jsonMessage["application_connected"] = true;
+                            
+                           
+
+                        }
+
+                        if (!jsonMessage.hasOwnProperty("application_connected") || !jsonMessage.hasOwnProperty("manager_connected")) {
+                            console.log("Not yet")
+                            publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
+                                publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(jsonMessage));
+    
+                            });  
+
+                        }
+                        */
+
+                    } else if (jsonMessage.hasOwnProperty("execute")) {
                     
                         const execute = jsonMessage["execute"]
                         //console.log("YO MAN")
@@ -285,6 +328,16 @@ const connection = function(connection)  {
                                     }
 
                                 }
+
+                                case "endSession":
+                                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                        connection.send(JSON.stringify(jsonMessage))
+                                        console.log("Ending Session")
+    
+                                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                       
+                                    }
+                                    break;
 
                                 
                         }
@@ -450,6 +503,8 @@ const connection = function(connection)  {
                                        
                                     }
                                     break;
+
+                            
                         
                         
                         }
@@ -528,11 +583,6 @@ const connection = function(connection)  {
                         publisher.get(channelSuffix + shortId, function(err, reply) {
                             // reply is null when the key is missing
 
-                            if (reply == null) {
-                                subscriber.subscribe(channelSuffix + shortId);
-
-                            }
-
                             message = {
                                 state: "initialize",
                                 applicationUUID: userId,
@@ -543,6 +593,13 @@ const connection = function(connection)  {
                             publisher.publish(channelSuffix + message["channel"], JSON.stringify(message));
 
                             connection.send(JSON.stringify(message))
+
+                            
+
+                            if (reply == null) {
+                                subscriber.subscribe(channelSuffix + shortId);
+
+                            }
                             
 
                         });
