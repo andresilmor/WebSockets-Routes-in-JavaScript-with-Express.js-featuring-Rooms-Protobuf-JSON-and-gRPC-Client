@@ -69,8 +69,69 @@ const connection = function(connection)  {
                 case "initialize":
                     break;
 
-                case "connecting":
+                case "upgrading":
+                    console.log("here 1: " + WhoAmI(jsonMessage))
+                    console.log(jsonMessage)
+                    console.log(userId)
+                    if (userId !== jsonMessage["managerUUID"]) {
+                    
+                        
+                        console.log("here 2: " + WhoAmI(jsonMessage))
+                        message = {
+                            state: "connected",
+                            managerUUID: jsonMessage["managerUUID"],
+                            applicationUUID: userId,
+                            channel: jsonMessage["secretChannel"],
+                        };
+                        
+                        console.log("Sending")
+                        console.log(message)
+                        connection.send(JSON.stringify(message))
 
+                        message = {
+                            state: "connecting",
+                            managerUUID: jsonMessage["managerUUID"],
+                            applicationUUID: userId,
+                            channel: jsonMessage["secretChannel"],
+                        };
+
+                        sessionChannel = jsonMessage["secretChannel"]
+
+                        subscriber.unsubscribe()
+
+                        subscriber.subscribe(channelSuffix +  sessionChannel);
+
+                        publisher.get(channelSuffix + jsonMessage["secretChannel"], function(err, reply) {
+                            publisher.publish(channelSuffix + jsonMessage["secretChannel"], JSON.stringify(message));
+
+                        });   
+
+                    }
+
+                    break;
+
+                case "connecting":
+                    console.log("Here is: " + WhoAmI(jsonMessage))
+
+                    if (userId === jsonMessage["managerUUID"]) {
+                        console.log("HERE I AM")
+
+                        message = {
+                            state: "connected",
+                            managerUUID: jsonMessage["managerUUID"],
+                            applicationUUID: jsonMessage["applicationUUID"],
+                            channel: jsonMessage["channel"],
+                        };
+                        
+                        sessionChannel = jsonMessage["channel"]
+
+                        console.log("Sending")
+                        console.log(message)
+                        connection.send(JSON.stringify(message))
+
+                    }
+
+                    /*
                     if (!jsonMessage.hasOwnProperty("applicationUUID") && userId != jsonMessage["managerUUID"]) {
                     
                         sessionChannel = uuid();
@@ -120,7 +181,7 @@ const connection = function(connection)  {
 
                         return
 
-                    }
+                    }*/
                     
                     break;
 
@@ -133,7 +194,7 @@ const connection = function(connection)  {
 
                     
                     if (!jsonMessage.hasOwnProperty("execute") ) {
-
+/*
                         if (userId == jsonMessage["managerUUID"]) {
                             if (count == 0) {
                                 connection.send(JSON.stringify(jsonMessage))
@@ -146,7 +207,7 @@ const connection = function(connection)  {
                      
                             connection.send(JSON.stringify(jsonMessage))
 
-                        }
+                        }*/
 
                         /*
                         if ( !jsonMessage.hasOwnProperty("manager_connected") && userId == jsonMessage["managerUUID"]) {
@@ -328,17 +389,18 @@ const connection = function(connection)  {
                                     }
 
                                 }
+                                break;
 
-                                case "endSession":
-                                    if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
-                                        connection.send(JSON.stringify(jsonMessage))
-                                        console.log("Ending Session")
-    
-                                    } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
-                                       
-                                    }
-                                    break;
+                            case "endSession":
+                                if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                    connection.send(JSON.stringify(jsonMessage))
+                                    console.log("Ending Session")
+                                    console.log(jsonMessage)
 
+                                } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                   
+                                }
+                                break;
                                 
                         }
     
@@ -610,18 +672,28 @@ const connection = function(connection)  {
                         if (jsonMessage["channel"] != shortId) {
 
                             subscriber.unsubscribe()
-                            subscriber.subscribe(channelSuffix +  jsonMessage["channel"]);
+                            
+                            sessionChannel = uuid();
+
+
+                            console.log("Web Application Connecting")
 
                             message = {
-                                state: "connecting",
+                                state: "upgrading",
                                 managerUUID: userId,
                                 channel: jsonMessage["channel"],
+                                secretChannel: sessionChannel,
                             };
 
                             publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
                                 publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
 
                             });    
+
+                            publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
+                                
+                                subscriber.subscribe(channelSuffix +  sessionChannel);
+                            });  
 
                         }
                         
