@@ -1,20 +1,11 @@
 const imports = require ('./../imports')
-const { promisify } = require("util");
-
-
-const express = imports.EXPRESS
-const WebSocket = imports.WEBSOCKET
 const uuid = imports.UUID
 const redis = imports.REDIS 
 const short = require('shortid');
 
-const grpc = imports.GRPC
-const grpcClient = imports.GRPC_CLIENT
-const grpcAddress = imports.GRPC_ADDRESS
 var protobuf = imports.PROTOBUF
 
 const MongoClient = imports.MONGO_CLIENT;
-const ObjectId = imports.OBJECT_ID;
 const GridFSBucket = imports.GRID_FS_BUCKET;
 
 const jimp = imports.JIMP;
@@ -23,13 +14,9 @@ const mongodbUrl = imports.MONGO_URL;
 const dbName = "SessionMaterial";
 
 
-const fs = require('fs');
-
 // --------------------------------------------------------------------------
 
 const connection = function(connection)  {
-
-    var connWarning = {}
 
     const channelSuffix = "careXR_"
 
@@ -70,13 +57,7 @@ const connection = function(connection)  {
                     break;
 
                 case "upgrading":
-                    console.log("here 1: " + WhoAmI(jsonMessage))
-                    console.log(jsonMessage)
-                    console.log(userId)
                     if (userId !== jsonMessage["managerUUID"]) {
-                    
-                        
-                        console.log("here 2: " + WhoAmI(jsonMessage))
                         message = {
                             state: "connected",
                             managerUUID: jsonMessage["managerUUID"],
@@ -84,8 +65,6 @@ const connection = function(connection)  {
                             channel: jsonMessage["secretChannel"],
                         };
                         
-                        console.log("Sending")
-                        console.log(message)
                         connection.send(JSON.stringify(message))
 
                         message = {
@@ -111,11 +90,8 @@ const connection = function(connection)  {
                     break;
 
                 case "connecting":
-                    console.log("Here is: " + WhoAmI(jsonMessage))
 
                     if (userId === jsonMessage["managerUUID"]) {
-                        console.log("HERE I AM")
-
                         message = {
                             state: "connected",
                             managerUUID: jsonMessage["managerUUID"],
@@ -124,138 +100,26 @@ const connection = function(connection)  {
                         };
                         
                         sessionChannel = jsonMessage["channel"]
-
-                        console.log("Sending")
-                        console.log(message)
+                        
                         connection.send(JSON.stringify(message))
 
                     }
-
-                    /*
-                    if (!jsonMessage.hasOwnProperty("applicationUUID") && userId != jsonMessage["managerUUID"]) {
-                    
-                        sessionChannel = uuid();
-
-
-                        message = {
-                            state: "connecting",
-                            managerUUID: jsonMessage["managerUUID"],
-                            applicationUUID: userId,
-                            channel: jsonMessage["channel"],
-                            secretChannel: sessionChannel,
-                        };
-
-                        publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
-                            publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
-
-                        });  
-
-
-                        return
-
-                    }
-                    
-                    if (jsonMessage.hasOwnProperty("applicationUUID")) {
-                        subscriber.unsubscribe();
-
-                        sessionChannel = jsonMessage["secretChannel"]
-
-                        publisher.get(channelSuffix + jsonMessage["secretChannel"], function(err, reply) {
-            
-                            if (reply == null) {
-                                subscriber.subscribe(channelSuffix + jsonMessage["secretChannel"]);
-
-                            }
-
-                            message = {
-                                state: "connected",
-                                managerUUID: jsonMessage["managerUUID"],
-                                applicationUUID: jsonMessage["applicationUUID"],
-                                channel: jsonMessage["secretChannel"],
-                            };
-                            
-                            publisher.publish(channelSuffix + jsonMessage["secretChannel"], JSON.stringify(message));
-            
-                        
-                        });
-
-                        return
-
-                    }*/
-                    
                     break;
 
                 case "connected":
-                    console.log(".....")
-                    console.log(jsonMessage)
-                    console.log("'''''")
 
-                    
-
-                    
                     if (!jsonMessage.hasOwnProperty("execute") ) {
-/*
-                        if (userId == jsonMessage["managerUUID"]) {
-                            if (count == 0) {
-                                connection.send(JSON.stringify(jsonMessage))
-                               
-                                count += 1
-
-                            }
-
-                        } else if (userId == jsonMessage["applicationUUID"]) {
-                     
-                            connection.send(JSON.stringify(jsonMessage))
-
-                        }*/
-
-                        /*
-                        if ( !jsonMessage.hasOwnProperty("manager_connected") && userId == jsonMessage["managerUUID"]) {
-                            console.log("Connected: Web Application")
-                            connection.send(JSON.stringify(jsonMessage))
-
-                            jsonMessage["manager_connected"] = true;
-
-                            connected = true;
-
-                          
-
-                        } 
-                        if (!jsonMessage.hasOwnProperty("application_connected") && userId == jsonMessage["applicationUUID"]) {
-                            console.log("Connected: VR Application")
-                            connection.send(JSON.stringify(jsonMessage))
-
-                            jsonMessage["application_connected"] = true;
-                            
-                           
-
-                        }
-
-                        if (!jsonMessage.hasOwnProperty("application_connected") || !jsonMessage.hasOwnProperty("manager_connected")) {
-                            console.log("Not yet")
-                            publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
-                                publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(jsonMessage));
-    
-                            });  
-
-                        }
-                        */
 
                     } else if (jsonMessage.hasOwnProperty("execute")) {
                     
                         const execute = jsonMessage["execute"]
-                        //console.log("YO MAN")
                         
                         switch (execute["operation"]) {
                             case "loadScene":
                                 if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
-                                    //console.log("Execute on " + WhoAmI(jsonMessage))
-                            
                                     connection.send(JSON.stringify(jsonMessage))
 
                                 } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
-                                    //console.log("Sending Return to " + WhoAmI(jsonMessage))
-                                    //console.log(jsonMessage)
                                     connection.send(JSON.stringify(jsonMessage))
 
                                 }
@@ -294,13 +158,8 @@ const connection = function(connection)  {
                                             const collection = db.collection("360_hotspots");
                                             const gridFSBucket = new GridFSBucket(db, { bucketName: "360_images" });
 
-                                            // Find the document by UUID
-                                            console.log("................sadasdasdsadas")
-                                            
-                                            console.log(jsonMessage)
                                             var hotspotUUID = jsonMessage["execute"]["params"]["hotspotUUID"]
-                                            console.log(hotspotUUID)
-                                            console.log("................sadasdasdsadas")
+                                           
                                             const document = await collection.findOne({ uuid });
 
                                             if (!document) {
@@ -308,29 +167,22 @@ const connection = function(connection)  {
                                                 return;
                                             }
 
-                                            // Get the image ObjectId from the document
                                             const imageObjectId = document.imageBytes;
 
-                                            // Measure the time taken to retrieve the image
                                             const startTime = Date.now();
 
-                                            // Create a writable stream to store the image data
                                             const imageChunks = [];
                                             const downloadStream = gridFSBucket.openDownloadStream(imageObjectId);
 
-                                            // Event handler for data chunk received
                                             downloadStream.on("data", (chunk) => {
                                                 imageChunks.push(chunk);
 
-                                                // Check if the file information is available
-                                                    if (downloadStream.file) {
-                                                        const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
-                                                        console.log(progress.toFixed(2) + "%");
-                                                    }
+                                                if (downloadStream.file) {
+                                                    const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
+                                                    console.log(progress.toFixed(2) + "%");
+                                                }
 
                                             });
-
-                                            
 
                                             downloadStream.on("error", (error) => {
                                                 console.error("Error retrieving image:", error.message);
@@ -346,7 +198,6 @@ const connection = function(connection)  {
                                                 protobuf.load("protobufs/messages/ProtoImage.proto", function(err, root) {
                                                     const protoImage = root.lookupType("protoImage.ProtoImage"); 
                                                     const protoMessage = protoImage.encode({ image: binaryImage }).finish();
-                                                    //console.log(Buffer.isBuffer(protoMessage));
 
                                                     connection.send(protoMessage)
 
@@ -373,9 +224,6 @@ const connection = function(connection)  {
                                                         channel: jsonMessage["channel"],
                                                     };
 
-                                                    console.log("AQUI")
-                                                    console.log(message)
-
                                                     connection.send(JSON.stringify(message))
 
                                                 })
@@ -394,11 +242,19 @@ const connection = function(connection)  {
                             case "endSession":
                                 if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
                                     connection.send(JSON.stringify(jsonMessage))
-                                    console.log("Ending Session")
-                                    console.log(jsonMessage)
 
                                 } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
                                    
+                                }
+                                break;
+
+                            case "saveExercise":
+                                if (execute.hasOwnProperty("params") && execute["responder"] == userId) {
+                                    console.log("Save: ")
+                                    console.log(jsonMessage)
+
+                                } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
+                                
                                 }
                                 break;
                                 
@@ -417,19 +273,12 @@ const connection = function(connection)  {
 
                     } else {
                         const execute = jsonMessage["execute"]
-                        //console.log("YO MAN")
                         switch (execute["operation"]) {
                             case "downloadHotspot":
                                 if (execute.hasOwnProperty("params") && execute["requester"] == userId) {
                                   
                                 } else if (execute.hasOwnProperty("return") && execute["requester"] == userId) {
-                                    console.log("YO IM HERWE!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                                    console.log(WhoAmI(jsonMessage))
-                                    
-                                    console.log("-----------------------------------------------")
-                                    console.log(jsonMessage)
-                                    console.log("-----------------------------------------------")
-
+                                  
                                     const client = new MongoClient(mongodbUrl);
 
                                     try {
@@ -441,7 +290,6 @@ const connection = function(connection)  {
 
                                             // Find the document by UUID
                                             imageUUID = jsonMessage["execute"]["return"]["exerciseEnvUUID"]
-                                            console.log(imageUUID)
                                             const document = await collection.findOne({ uuid: imageUUID });
 
                                             if (!document) {
@@ -449,21 +297,16 @@ const connection = function(connection)  {
                                                 return;
                                             }
 
-                                            // Get the image ObjectId from the document
                                             const imageObjectId = document.imageBytes;
 
-                                            // Measure the time taken to retrieve the image
                                             const startTime = Date.now();
 
-                                            // Create a writable stream to store the image data
                                             const imageChunks = [];
                                             const downloadStream = gridFSBucket.openDownloadStream(imageObjectId);
 
-                                            // Event handler for data chunk received
                                             downloadStream.on("data", (chunk) => {
                                                 imageChunks.push(chunk);
 
-                                                // Check if the file information is available
                                                     if (downloadStream.file) {
                                                         const progress = (downloadStream.bytesReceived / downloadStream.file.length) * 100;
                                                         console.log(progress.toFixed(2) + "%");
@@ -508,12 +351,9 @@ const connection = function(connection)  {
                                             console.error("Error:", error.message);
                                             client.close();
                                         }
-/*
-                                    
-   */                                 
-
 
                                 }
+
                                 break;
 
                             case "startExercise":
@@ -566,9 +406,6 @@ const connection = function(connection)  {
                                     }
                                     break;
 
-                            
-                        
-                        
                         }
                         
 
@@ -587,9 +424,11 @@ const connection = function(connection)  {
             
     });
 
-
     // ---------------------------------------------------------------------------------------------------------------------
-
+    // ---------------------------------------------------------------------------------------------------------------------
+    //          PUB/SUB LOGIC ABOVE     |     WS LOGIC DOWN    
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------------------------------
 
     async function GenerateShortID() {
         shortId = short()
@@ -617,15 +456,10 @@ const connection = function(connection)  {
     // ---------------------------------------------------------------------------------------------------------------------
 
     connection.on('message', async function incoming(data, isBinary) {
-        console.log("Message Received")
         try {
             message = isBinary ? data : data.toString();
             const jsonMessage = JSON.parse(message)
             
-            console.log(jsonMessage)
-
-       
-
             if (jsonMessage["state"] != null) {
              
                 switch (jsonMessage["state"]) {
@@ -640,7 +474,6 @@ const connection = function(connection)  {
                         await GenerateShortID();
 
                         console.log("1 - " + shortId)
-                        //publisher.sadd("vrHeal_sessions", channelSuffix + shortId)
 
                         publisher.get(channelSuffix + shortId, function(err, reply) {
                             // reply is null when the key is missing
@@ -651,18 +484,14 @@ const connection = function(connection)  {
                                 channel: shortId,
                             };
 
-                            console.log("publishing")
                             publisher.publish(channelSuffix + message["channel"], JSON.stringify(message));
 
                             connection.send(JSON.stringify(message))
-
-                            
 
                             if (reply == null) {
                                 subscriber.subscribe(channelSuffix + shortId);
 
                             }
-                            
 
                         });
                         break;
@@ -674,9 +503,6 @@ const connection = function(connection)  {
                             subscriber.unsubscribe()
                             
                             sessionChannel = uuid();
-
-
-                            console.log("Web Application Connecting")
 
                             message = {
                                 state: "upgrading",
@@ -691,8 +517,8 @@ const connection = function(connection)  {
                             });    
 
                             publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
-                                
                                 subscriber.subscribe(channelSuffix +  sessionChannel);
+
                             });  
 
                         }
@@ -707,6 +533,7 @@ const connection = function(connection)  {
                             applicationUUID: jsonMessage["applicationUUID"],
                             execute: jsonMessage["execute"],
                             channel: jsonMessage["channel"],
+
                         };
 
                         publisher.get(channelSuffix + jsonMessage["channel"], function(err, reply) {
@@ -729,7 +556,6 @@ const connection = function(connection)  {
                 }
                 
             } else if (jsonMessage["warning"] != null) {
-                //console.log("> 1")
                 switch (jsonMessage["warning"]["message"]) {
                     
                     case "protobuf_incoming":
@@ -748,30 +574,11 @@ const connection = function(connection)  {
                             
                                     publisher.publish(channelSuffix + jsonMessage["warning"]["blocked"]["channel"], JSON.stringify(jsonMessage["warning"]["blocked"]));
                                     
-
-
-
                                     break
             
                             }
             
                         }
-
-                        /*
-                        message = {
-                            warning: {
-                                message: "protobuf_incoming",
-                                to: jsonMessage["applicationUUID"], 
-                                proto: "ProtoImage",
-                                goal: "hotspotTexture"
-                                blocked: jsonMessage
-
-                            }
-
-                        }
-
-                        publisher.publish(channelSuffix + jsonMessage["channel"], JSON.stringify(message));
-                        */
 
                         break
 
