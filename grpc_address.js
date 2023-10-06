@@ -1,3 +1,3 @@
-const address = "7.tcp.eu.ngrok.io:17850";
+const address = "localhost:50050";
 
 module.exports = { ADDRESS: address }

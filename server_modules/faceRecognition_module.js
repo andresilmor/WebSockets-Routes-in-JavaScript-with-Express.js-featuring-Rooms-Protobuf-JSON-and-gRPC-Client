@@ -14,14 +14,23 @@ const uuid = imports.UUID
 const ml_imgInference_clients = {};
 
 const connection = function(connection)  {
-    console.log("A new client connected on Machine Learning (Image inference) on port 9000 ")
+    console.log("A new client connected on Machine Learning (FaceRecognition) on port 9000 (Test 1) ")
 
     const userId = uuid();
     ml_imgInference_clients[userId] = connection;
 
-    connection.on('message', function incoming(data) {
+    connection.on('message', function incoming(data, isBinary) {
+        message = isBinary ? data : data.toString();
+
+        console.log(message.substring(0,30))
         try {
-            //ws.binaryType = 'arraybuffer'
+            //console.log(data)
+            //message = isBinary ? data : data.toString();
+            //const jsonMessage = JSON.parse(message)
+
+            //console.log(jsonMessage)
+
+            //connection.binaryType = 'arraybuffer'
             
             //console.log("Receved: %s", message)
             //console.log("Message received")
@@ -60,7 +69,11 @@ const connection = function(connection)  {
             */
             //ws.binaryType = 'arraybuffer'
 
-        
+            //var base64Data = req.rawBody.replace(/^data:image\/png;base64,/, "");
+
+            require("fs").writeFile("out.png", message, 'base64', function(err) {
+              console.log(err);
+            });
         
             const client = new grpcClient.imageInference.ImageInferenceService(
                 grpcAddress.ADDRESS,
@@ -70,14 +83,27 @@ const connection = function(connection)  {
 
             var inferenceResult
             var request
+
+          
+            /*
             protobuf.load("protobufs/messages/ProtoImage.proto", function(err, root) {
                 request = root.lookupType("protoImage.ProtoImage");
                 
-                //console.log("So it begins...")
+                console.log("So it begins...")
 
                 var decoded = request.decode(new Uint8Array(data));
 
-                client.PacientsAndEmotionsInference({ image: decoded['image'] }, function (err, response) {
+                fs.writeFile("yo.jpg", decoded['image'], function(err) {
+                    if(err) {
+                        console.log(err);
+                    } else {
+                        console.log("The file was saved!");
+                    }
+                });*/
+
+                var buf = Buffer.from(message, 'base64'); 
+
+                client.FaceRecognitionWithDetection({ image: buf, collections: ["pacients"], useFastDetection: false }, function (err, response) {
                     try {
                         //console.log('0 Message:', response.detections);
                         //console.log('R Message:', response);
@@ -165,7 +191,7 @@ const connection = function(connection)  {
                 });
                 
             
-            })
+            
         } catch (exception) {
             console.log("ML Pacients & Emotion Recon Exception: " + exception)
 

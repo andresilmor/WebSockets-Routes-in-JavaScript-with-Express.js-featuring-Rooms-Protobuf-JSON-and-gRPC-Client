@@ -4,9 +4,41 @@ package imageInference;
 
 service ImageInferenceService {
     rpc PacientsAndEmotionsInference (InferenceRequest) returns (PacientsAndEmotionsInferenceReply) { }
+
+    rpc FaceRecognitionWithoutDetection (FaceRecognitionWithoutDetectionRequest) returns (FaceRecognitionReply) {}
+
+    rpc FaceRecognitionWithDetection (FaceRecognitionWithDetectionRequest) returns (FaceRecognitionReply) {}
+
     rpc QRCodeDecode (InferenceRequest) returns (QRCodeContent) { }
+}
+
+message FaceRecognitionWithoutDetectionRequest {
+    bytes image = 1;
+    repeated string collections = 2;
+    repeated FaceRect rectList = 3;
 
 }
+
+message FaceRecognitionWithDetectionRequest {
+    bytes image = 1;
+    repeated string collections = 2;
+    bool useFastDetection = 3;
+
+}
+
+message FaceRecognitionReply {
+    repeated FaceDetected recognitions = 1;
+ 
+}
+
+message FaceDetected {
+    string uuid = 1;
+    FaceRect faceRect = 2;
+
+}
+
+
+// -----------------------------------------------------------------------
 
 message InferenceRequest {
     bytes image = 1;
@@ -46,11 +78,11 @@ message EmotionsDetected {
 
 }
 
+// -----------------------------------------------------------------------
+
 message QRCodeContent {
     string content = 1;
 
 }
-
-
 
 

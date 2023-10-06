@@ -9,12 +9,12 @@ const app = express()
 //                                                     Machine Learning (Frame Inference)
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-const pacientsAndEmotionRecon_module = require('./server_modules/pacientsAndEmotionsRecon_module.js')
+const pacientsAndEmotionRecon_module = require('./server_modules/faceRecognition_module.js')
 
 const ml_imgInference_server = require('http').createServer(app)
 const ml_imgInference_wss = new WebSocket.Server( { server: ml_imgInference_server } )
 ml_imgInference_wss.on('connection', pacientsAndEmotionRecon_module.CONNECTION)
-ml_imgInference_server.listen(9000, () => console.log("Machine Learning (Image inference) on port 9000"))
+ml_imgInference_server.listen(9000, () => console.log("Machine Learning (FaceRecognition) on port 9000"))
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------

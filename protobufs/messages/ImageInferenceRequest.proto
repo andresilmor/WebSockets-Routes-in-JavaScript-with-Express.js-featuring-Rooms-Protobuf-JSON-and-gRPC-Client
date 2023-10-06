@@ -1,0 +1,7 @@
+package imageInferenceRequest;
+syntax = "proto3";
+
+message ImageInferenceRequest {
+    bytes image = 1; 
+    repeated string filter = 2;
+}
